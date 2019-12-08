@@ -1,0 +1,49 @@
+{
+  "name": "better-firebase-functions",
+  "version": "1.0.2",
+  "description": "This package exposes a function that improves upon the standard way of bundling functions for Firebase Cloud Functions. It includes the ability to glob-match files that contain a cloud function that are then automatically exported. See README.md for more info.",
+  "main": "lib/index.js",
+  "files": ["lib"],
+  "scripts": {
+    "test": "jest --verbose",
+    "build": "tsc -d",
+    "prebuild": "eslint ./src/**/*.ts",
+    "prepublish": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gramstr/better-firebase-functions.git"
+  },
+  "keywords": [
+    "firebase",
+    "cloud-functions",
+    "efficient",
+    "deploy"
+  ],
+  "author": "George G",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/gramstr/better-firebase-functions/issues"
+  },
+  "homepage": "https://github.com/gramstr/better-firebase-functions#readme",
+  "devDependencies": {
+    "@types/jest": "^24.0.23",
+    "@types/lodash.set": "^4.3.6",
+    "@typescript-eslint/eslint-plugin": "^2.10.0",
+    "@typescript-eslint/parser": "^2.10.0",
+    "commitizen": "^4.0.3",
+    "eslint": "^6.1.0",
+    "eslint-config-airbnb": "^18.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-react": "^7.17.0",
+    "jest": "^24.9.0",
+    "semantic-release": "^15.13.31",
+    "ts-jest": "^24.2.0",
+    "ts-node": "^8.5.4",
+    "typescript": "^3.7.3"
+  },
+  "dependencies": {
+    "lodash.set": "^4.3.2"
+  }
+}
