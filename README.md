@@ -2,6 +2,18 @@
 
 This repo provides a default export method for a better way of automatically organising files, imports and function triggers in Firebase Cloud Functions
 
+## tl;dr
+
+- automatically find/bundle/sort/export all of your cloud functions from multiple dirs without having to manually require each file
+- faster cold-start times for your cloud functions
+- lower memory-use
+- simpler dependency lazy-loading
+- automated exports of function names based on dir/filename
+- freedom to structure your project in nested directories
+- freedom to easily change and rearrange your file structure without having
+- rename a function by renaming a file (well, you'll have to manually delete the old function)
+- automatically create function groups based on directory structure, allowing for `--only functions: groupA` deploys
+
 ## Usage
 
 Getting this right is pretty simple, just avoid a few common pitfalls
@@ -23,9 +35,34 @@ exports.
 every .js file found in its containing directory and all subdirectories (onto a properly nested exports object).
 - for JS projects that cant use `export default` syntax, just use equivalent `module.exports.default = ...`.
 
+### Docs
+
+```typescript
+/* This function will search the given directory using provided glob matching pattern and
+ * export firebase cloud functions for you automatically, without you having to require
+ * each file individually. It also applies speed optimisations for cold-start.
+ *
+ * All matching files will then be checked for a default export. The filename and path is
+ * used to determine the function name on deployment.
+ *
+ * You can set the glob pattern to only pick up files that end in *.cf.js or *.function.js
+ * Be sure to use `js` as your file extension when matching if you are using Typescript
+ *
+ * @param glob `string` the glob pattern to search `dir` for function files
+ * @param dir `string` the directory to search in.
+ * @returns `exports` object - just in case
+ *
+ * @example */
+// This is your ENTIRE index.ts file
+import exportCloudFunctions from 'better-firebase-functions'
+exportCloudFunctions(__dirname, __filename, exports, './', GLOB_PATTERN);
+```
+
 ### Structure
 
-- Ensure that each file that contains a cloud function only contains one cloud function.
+- Ensure that each file that contains a cloud function only contains one cloud function (although you could have more by
+attaching multiple exports to `exports.default.func1`, `exports.default.func2` - this can also be achieved by building an
+object `funcs.one()`, `funcs.two()`, and then `export default funcs`).
 - Each file that exports a cloud function must use `export default` syntax. If you are using JS instead of TS, you may just
 use `module.exports.default` to mimic this behavior. The function will attach the default export of every function file
 to the global export for Cloud Functions at the appropriate field path (key/sub-key of the object) onThe exports object.
@@ -54,17 +91,6 @@ You can simply `import`/`require()` all the modules you need at the top of the f
 the module scope of each function, the dependencies of one function will not be loaded when a different function instance is invocated.
 
 This greatly reduces cold-boot times while simplifying and reducing the need to lazy-load cached global dependencies in the function instance' global scope.
-
-## tl;dr
-
-- faster cold-start times for your cloud functions
-- lower memory-use
-- simpler dependency lazy-loading
-- automated exports of function names based on dir/filename
-- freedom to structure your project in nested directories
-- freedom to easily change and rearrange your file structure without having
-- rename a function by renaming a file (well, you'll have to manually delete the old function)
-- automatically create function groups based on directory structure, allowing for `--only functions: groupA` deploys
 
 ## Warnings
 

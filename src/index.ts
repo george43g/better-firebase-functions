@@ -1,24 +1,26 @@
 /* eslint-disable global-require */
 /* eslint-disable max-len */
 import { resolve } from 'path';
-
 import set from 'lodash.set';
-
 import camelCase from 'camelcase';
 
 import glob = require('glob');
 
 const funcNameFromRelPath = (relpath: string): string => {
   const relPath = relpath;
-  const relPathArray = relPath.split('/');
-  const fileName = relPathArray.pop();
+  const relPathArray = relPath.split('/'); /* ? */
+  const fileName = relPathArray.pop(); /* ? */
   const relDirPathFunctionNameChunk = relPathArray.map((pathFragment) => camelCase(pathFragment)).join('/');
-  const fileNameFunctionNameChunk = camelCase(fileName.split('.')[0]);
-  return [relDirPathFunctionNameChunk, fileNameFunctionNameChunk].join('/').replace(/\//g, '-');
+  const fileNameFunctionNameChunk = camelCase(fileName!.split('.')[0]);
+  const funcName = relDirPathFunctionNameChunk ? `${relDirPathFunctionNameChunk}/${fileNameFunctionNameChunk}` : fileNameFunctionNameChunk;
+  return funcName.replace(/\//g, '-');
 };
 
 /**
- * This function will search the given directory using provided glob matching pattern.
+ * This function will search the given directory using provided glob matching pattern and
+ * export firebase cloud functions for you automatically, without you having to require
+ * each file individually. It also applies speed optimisations for cold-start.
+ *
  * All matching files will then be checked for a default export. The filename and path is
  * used to determine the function name on deployment.
  *
@@ -30,7 +32,7 @@ const funcNameFromRelPath = (relpath: string): string => {
  * @returns `exports` object - just do exports = exportCloudFunctions...
  *
  * @example import exportCloudFunctions from 'better-firebase-functions'
- * exports = exportCloudFunctions(__dirname, __filename, exports, './', GLOB_PATTERN);
+ * exportCloudFunctions(__dirname, __filename, exports, './', GLOB_PATTERN);
  */
 export default (__dirname: string, __filename: string, exports:any, dir?: string, globPattern?: string) => {
   const funcDir = dir || './';
