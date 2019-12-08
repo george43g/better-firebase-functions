@@ -4,7 +4,18 @@ import { resolve } from 'path';
 
 import set from 'lodash.set';
 
+import camelCase from 'camelcase';
+
 import glob = require('glob');
+
+const funcNameFromRelPath = (relpath: string): string => {
+  const relPath = relpath;
+  const relPathArray = relPath.split('/');
+  const fileName = relPathArray.pop();
+  const relDirPathFunctionNameChunk = relPathArray.map((pathFragment) => camelCase(pathFragment)).join('/');
+  const fileNameFunctionNameChunk = camelCase(fileName.split('.')[0]);
+  return [relDirPathFunctionNameChunk, fileNameFunctionNameChunk].join('/').replace(/\//g, '-');
+};
 
 /**
  * This function will search the given directory using provided glob matching pattern.
@@ -27,15 +38,16 @@ export default (__dirname: string, __filename: string, exports:any, dir?: string
   const files = glob.sync(pat, { cwd: resolve(__dirname, funcDir) });
   // eslint-disable-next-line no-restricted-syntax
   for (const file of files) {
-    const path = resolve(__dirname, file);
+    const absPath = resolve(__dirname, funcDir, file);
     // eslint-disable-next-line no-continue
-    if (path.slice(0, -3) === __filename.slice(0, -3)) continue; // Prevent exporting this file if present
-    const filePath = path.substr(__dirname.length + 1); /* ? */
-    const funcName = filePath.replace(/\//g, '-').slice(0, -3); /* ? */
+    if (absPath.slice(0, -2) === __filename.slice(0, -2)) continue; // Prevent exporting this file if present
+    const absFuncDir = resolve(__dirname, funcDir);
+    const relPath = absPath.substr(absFuncDir.length + 1); /* ? */
+    const funcName = funcNameFromRelPath(relPath); /* ? */
     const propPath = funcName.replace(/-/g, '.'); /* ? */
     if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === funcName) {
       // eslint-disable-next-line import/no-dynamic-require
-      const module = require(resolve(__dirname, funcDir, filePath));
+      const module = require(resolve(__dirname, funcDir, relPath));
       // eslint-disable-next-line no-continue
       if (!module.default) continue;
       set(exports, propPath, module.default);

@@ -5,7 +5,8 @@ This repo provides a default export method for a better way of automatically org
 ## Usage
 
 Getting this right is pretty simple, just avoid a few common pitfalls
-```
+
+```typescript
 /// entry point, index.js/ts
 import exportCloudFunctions from 'better-firebase-functions'
 exportCloudFunctions(__dirname, __filename, exports, './', './**/*.js') // You should probably always match .js
@@ -36,7 +37,7 @@ match files that end in, for example, `*.function.js` (please note, even if you 
 Some choose to put their index.js in the root of the functions folder. Either way, you can use a combination of the `dir` and `glob` parameters to specify any functions files you want.
 - This means you can arrange your project's files and directories however you like
 - Each directory is a function group you can choose to deploy on its own using the `--only functions: groupA.folderB` CLI syntax. In that
-example, only functions found in a directory `folderb`, which is in directory `groupA`, which is in the specified root functions directory will be deployed.
+example, only functions found in a directory `folderB`, which is in directory `groupA`, which is in the specified root functions directory will be deployed.
 - So the module will automatically name your functions after the file name and containing directory names. Functions nested in directories will correspond to sub-properties in the exports object. So for example, a function found in `./auth/newUser.js` will be called `auth-newUser` and set to exports.auth.newUser - this is how the function groups can be automated by simple file structure.
 
 ## Benefits
@@ -64,3 +65,31 @@ This greatly reduces cold-boot times while simplifying and reducing the need to 
 - freedom to easily change and rearrange your file structure without having
 - rename a function by renaming a file (well, you'll have to manually delete the old function)
 - automatically create function groups based on directory structure, allowing for `--only functions: groupA` deploys
+
+## Warnings
+
+Try to avoid collisions, where two modules are exported to the same path.
+
+This module does its best to convert dashes in files to camelCase and multi-extensions on
+files `user.function.js` to valid names, so as to avoid misnaming a function.
+
+You can use the glob pattern to specify which files to target, but be careful:
+`user.test.js & user.function.js`, if they are both included accidentally, will collide with each other
+as they are both called `user` and the extension is stripped away.
+
+If you need both files, then you can optionally change their names to use camelCase or use a dash `-` (which
+are also automatically converted to camelCase) leaving only the dot in .js
+
+### Todo
+
+- implement jest testing
+- implement semantic release on travis-ci
+- implement greenkeeper
+- husky / commitlint git hooks, testing git hooks
+- compile to the latest node version supported by firebase - 10.15.3, es2018
+- better error handling and edge cases, console.error() errors
+- performance review
+
+### Contribute
+
+Please contribute to this project by submitting a pull request. Use commitizen to generate correct commit messages.
