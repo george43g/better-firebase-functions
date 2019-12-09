@@ -9,7 +9,8 @@
   "scripts": {
     "test": "jest --verbose",
     "build": "tsc -d",
-    "prebuild": "eslint ./src/**/*.ts --fix",
+    "lint": "eslint ./src/**/*.ts --fix",
+    "prebuild": "npm run lint",
     "prepare": "npm run build"
   },
   "repository": {
