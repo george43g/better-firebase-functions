@@ -1,18 +1,18 @@
 # better-firebase-functions
 
-This repo provides a default export method for a better way of automatically organising files, imports and function triggers in Firebase Cloud Functions
+This repo provides a default export method for a better way of automatically organising files, imports and function triggers in Firebase Cloud Functions.
 
 ## tl;dr
 
-- automatically find/bundle/sort/export all of your cloud functions from multiple dirs without having to manually require each file
-- faster cold-start times for your cloud functions
-- lower memory-use
-- simpler dependency lazy-loading
-- automated exports of function names based on dir/filename
-- freedom to structure your project in nested directories
-- freedom to easily change and rearrange your file structure without having
-- rename a function by renaming a file (well, you'll have to manually delete the old function)
-- automatically create function groups based on directory structure, allowing for `--only functions: groupA` deploys
+- Automatically find/bundle/sort/export all of your cloud functions from multiple directories without having to manually require each file.
+- Faster cold-start times for your cloud functions.
+- Lower memory-use.
+- Simpler dependency lazy-loading.
+- Automated exports of function names based on dir/filename.
+- Freedom to structure your project in nested directories.
+- Freedom to easily change and rearrange your file structure without having.
+- Rename a function by renaming a file.
+- Automatically create function groups based on directory structure, allowing for `--only functions: groupA` deploys.
 
 ## Usage
 
@@ -22,10 +22,12 @@ Getting this right is pretty simple, just avoid a few common pitfalls
 /// entry point, index.js/ts
 import exportCloudFunctions from 'better-firebase-functions'
 exportCloudFunctions(__dirname, __filename, exports, './', './**/*.js') // You should probably always match .js
+```
 
+```ts
 /// ./auth/newUser.ts
 import * as functions from 'firebase-functions'
-export default functions.https...
+export default functions.https.onRequest(app)...
 ```
 
 - the `__dirname, __filename, exports` parameters of the function should most likely remain that way, unless you know
@@ -60,9 +62,7 @@ exportCloudFunctions(__dirname, __filename, exports, './', GLOB_PATTERN);
 
 ### Structure
 
-- Ensure that each file that contains a cloud function only contains one cloud function (although you could have more by
-attaching multiple exports to `exports.default.func1`, `exports.default.func2` - this can also be achieved by building an
-object `funcs.one()`, `funcs.two()`, and then `export default funcs`).
+- Ensure that each file that contains a cloud function only contains one cloud function.
 - Each file that exports a cloud function must use `export default` syntax. If you are using JS instead of TS, you may just
 use `module.exports.default` to mimic this behavior. The function will attach the default export of every function file
 to the global export for Cloud Functions at the appropriate field path (key/sub-key of the object) onThe exports object.
