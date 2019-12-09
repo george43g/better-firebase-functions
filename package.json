@@ -10,7 +10,7 @@
     "test": "jest --verbose",
     "build": "tsc -d",
     "prebuild": "eslint ./src/**/*.ts --fix",
-    "prepublish": "npm run build"
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
