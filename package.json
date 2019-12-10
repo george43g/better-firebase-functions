@@ -1,6 +1,6 @@
 {
   "name": "better-firebase-functions",
-  "version": "5.12.0",
+  "version": "5.13.0",
   "description": "This package exposes a function that improves upon the standard way of bundling functions for Firebase Cloud Functions. It includes the ability to glob-match files that contain a cloud function that are then automatically exported. See README.md for more info.",
   "main": "lib/index.js",
   "files": [
