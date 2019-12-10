@@ -14,6 +14,6 @@
         "types": ["node", "jest"]
     },
     "exclude": [
-        "node_modules", "lib"
+        "node_modules", "lib", "__mocks__", "__tests__"
     ]
 }
