@@ -85,10 +85,8 @@ are also automatically converted to camelCase) leaving only the dot in .js.
 
 ### Todo
 
-- Implement Jest testing.
-- Implement Semantic Release on Travis-Ci.
 - Implement Greenkeeper.
-- Husky / Commitlint git hooks, testing git hooks.
+- Testing git hooks.
 - Compile to the latest Node version supported by Firebase - 10.15.3, es2018.
 - Better error handling and edge cases, console.error() errors.
 - Performance review.
