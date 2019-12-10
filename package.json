@@ -1,6 +1,6 @@
 {
   "name": "better-firebase-functions",
-  "version": "1.1.4",
+  "version": "0.0.0-development",
   "description": "This package exposes a function that improves upon the standard way of bundling functions for Firebase Cloud Functions. It includes the ability to glob-match files that contain a cloud function that are then automatically exported. See README.md for more info.",
   "main": "lib/index.js",
   "files": [
@@ -11,11 +11,13 @@
     "build": "tsc -d",
     "lint": "eslint ./src/**/*.ts --fix",
     "prebuild": "npm run lint",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "release": "npm run semantic-release",
+    "semantic-release": "semantic-release"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/gramstr/better-firebase-functions.git"
+    "url": "https://github.com/gramstr/better-firebase-functions.git"
   },
   "keywords": [
     "firebase",
@@ -35,6 +37,7 @@
     "@typescript-eslint/eslint-plugin": "^2.10.0",
     "@typescript-eslint/parser": "^2.10.0",
     "commitizen": "^4.0.3",
+    "cz-conventional-changelog": "^3.0.2",
     "eslint": "^6.1.0",
     "eslint-config-airbnb": "^18.0.1",
     "eslint-plugin-import": "^2.18.2",
@@ -50,5 +53,26 @@
     "camelcase": "^5.3.1",
     "glob": "^7.1.6",
     "lodash.set": "^4.3.2"
+  },
+  "jest": {
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/__tests__"
+    ],
+    "testMatch": [
+      "**/__tests__/**/*.+(ts|tsx|js)",
+      "**/?(*.)+(spec|test).+(ts|tsx|js)"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest"
+    }
+  },
+  "release": {
+    "branch": "master"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
