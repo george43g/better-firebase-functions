@@ -4,7 +4,8 @@ This repo provides a default export function for a better way of automatically e
 
 ## tl;dr
 
-- Automatically find/bundle/sort/export all of your cloud functions from multiple directories without having to manually require each file.
+- Automatically find and export all of your cloud functions from multiple directories without having to manually require each file.
+- Functions are automatically named after their path from the root functions directory.
 - Faster cold-start times for your cloud functions.
 - Lower memory-use.
 - Simpler dependency lazy-loading.
