@@ -90,6 +90,7 @@ export interface ExportFunctionsConfig {
    * the behaviour of es6 modules using `export default`. You may customise this behaviour.
    * @param inputModule This object is the required CommonJS module that will be passed
    * as the only argument to this function.
+   * @returns must return the actual function trigger to be exported to firebase functions.
    * @example exportFunctions({extractTrigger: (obj) => obj['default']})
    */
   extractTrigger: (inputModule: any) => any;

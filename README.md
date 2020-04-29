@@ -5,6 +5,10 @@ in Firebase Cloud Functions. This method will almost always improve the performa
 your cloud functions, especially in large projects. It also allows for a more scalable file structure for your source
 code directory.
 
+This package is bundled into one module with 0 dependencies, and is designed to be as lightweight, configurable and
+reliable/redundant as possible. Suitable for production use in almost any project. Only one feature is available in this
+package to keep the bundle size as small as possible for performance reasons.
+
 ## exportFunctions()
 
 This function has two main features:
@@ -59,6 +63,8 @@ nested on the exports object to mirror the folder structure, allowing for deploy
 pattern to only pick up files that end in _.cf.js or _.function.js Be sure to _still_ use `js` as your file extension
 when matching if you are using Typescript as this code is executed at runtime once the files are compiled.
 
+### Settings Object
+
 #### logger : object, enableLogger: boolean
 
 You may specify a custom log function, and enable/disable performance logging.
@@ -78,7 +84,13 @@ Provide a custom subdirectory to search for function triggers.
 
 This is a glob pattern that allows you to define which files to search for.
 
-#### Other Options
+#### extractTrigger: method
+
+By passing this method you can customise how `exportFunctions()` gets the function trigger from the module. The default
+behaviour is to look for the `default` export, but you may specify a different way such as a named export. The function
+is given the module object and must return the function trigger.
+
+### Other Options
 
 The provided typings contain jsdoc comments that should provide intellisense about the various configuration options
 available and how to use them.
