@@ -1,0 +1,11 @@
+{
+  "plugins": ["jest"],
+  "extends": ["../.eslintrc.json", "plugin:jest/recommended", "plugin:jest/all"],
+  "env": {
+    "jest": true,
+    "jest/globals": true
+  },
+  "rules": {
+    "jest/prefer-expect-assertions": 0
+  }
+}
