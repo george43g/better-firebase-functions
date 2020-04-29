@@ -128,8 +128,8 @@ const isDeployment = () => !getFunctionInstance();
 const funcNameMatchesInstance = (funcName: string) => funcName === getFunctionInstance();
 const getTriggerFromModule = (inputModule: any) => inputModule?.default;
 
-const coldModuleMsg = '[better-firebase-functions] Cold-Start Load Function Module';
-const dirSearchMsg = '[better-firebase-functions] Directory Traversal Glob Search';
+const coldModuleMsg = '[better-firebase-functions] Load Module (Cold-Start)';
+const dirSearchMsg = '[better-firebase-functions] Directory Glob Search';
 const deployMsg = '[better-firebase-functions] Load & Export Modules (Deployment)';
 
 /**
@@ -171,12 +171,14 @@ export function exportFunctions({
   log.timeEnd(dirSearchMsg);
 
   const moduleSearchMsg = `[better-firebase-functions] Search for Module '${getFunctionInstance()}'`;
-  log.time(isDeployment() ? deployMsg : moduleSearchMsg);
+  if (isDeployment()) log.time(deployMsg);
+  else log.time(moduleSearchMsg);
 
   // eslint-disable-next-line no-restricted-syntax
   for (const file of files) {
     const funcName = funcNameFromRelPath(file); /* ? */
     if (isDeployment() || funcNameMatchesInstance(funcName)) {
+      if (!isDeployment()) log.timeEnd(moduleSearchMsg);
       const absPath = resolve(cwd, file);
       if (absPath.slice(0, -2) === __filename.slice(0, -2)) continue; // Prevent exporting self
 
@@ -196,6 +198,6 @@ export function exportFunctions({
     }
   } // End loop
 
-  log.timeEnd(isDeployment() ? deployMsg : moduleSearchMsg);
+  if (isDeployment()) log.timeEnd(deployMsg);
   return exports;
 }
