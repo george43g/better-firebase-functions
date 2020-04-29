@@ -1,19 +1,17 @@
 {
-    "version": "2.4.2",
-    "compilerOptions": {
-        "lib": ["es5", "es6"],
-        "target": "es6",
-        "module": "commonjs",
-        "moduleResolution": "node",
-        "emitDecoratorMetadata": true,
-        "experimentalDecorators": true,
-        "sourceMap": true,
-        "rootDir": "src",
-        "outDir": "lib",
-        "esModuleInterop": true,
-        "types": ["node", "jest"]
-    },
-    "exclude": [
-        "node_modules", "lib", "__mocks__", "__tests__"
-    ]
+  "version": "2.4.2",
+  "compilerOptions": {
+    "lib": ["es2017"],
+    "target": "es2017",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "lib",
+    "esModuleInterop": true,
+    "types": ["node", "jest"]
+  },
+  "exclude": ["node_modules", "lib", "__mocks__", "__tests__"]
 }
