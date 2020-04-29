@@ -37,7 +37,7 @@ In your main entry point file, simply include these two lines of code:
 ```typescript
 /// entry point, index.js/ts
 import { exportFunctions } from 'better-firebase-functions';
-exportFunctions(__filename, exports);
+exportFunctions({ __filename, exports });
 ```
 
 The function will export all found triggers from your index file.
