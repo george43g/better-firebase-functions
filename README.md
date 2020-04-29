@@ -1,97 +1,110 @@
 # better-firebase-functions
 
-This repo provides a default export function for a better way of automatically exporting function triggers in Firebase Cloud Functions.
+The main feature of this package is a function that provides a better way of automatically exporting function triggers
+in Firebase Cloud Functions. This method will almost always improve the performance, memory usage and cold-boot time of
+your cloud functions, especially in large projects. It also allows for a more scalable file structure for your source
+code directory.
 
-## tl;dr
+## exportFunctions()
 
-- Automatically find and export all of your cloud functions from multiple directories without having to manually require each file.
+This function has two main features:
+
+1. Automatically export all function triggers from your index file, without having to manually import each module.
+
+2. Function triggers are exported in a special way that increases performance and reduces cold-boot time of your cloud
+   functions.
+
+_More info:_
+
 - Functions are automatically named after their path from the root functions directory.
-- Faster cold-start times for your cloud functions.
-- Lower memory-use.
-- Simpler dependency lazy-loading.
-- Automated exports of function names based on dir/filename.
-- Freedom to structure your project in nested directories.
-- Freedom to easily change and rearrange your file structure without having.
 - Rename a function by renaming a file.
 - Automatically create function groups based on directory structure, allowing for `--only functions: groupA` deploys.
 
-## Usage
+For JS projects that cant use `export default` syntax, just use equivalent `module.exports.default = ...`.
 
-Getting this right is pretty simple, just avoid a few common pitfalls:
+This function scans a directory for modules (_.js files), then exports them automatically. It exports each found
+module's `default` export (`export default _`or`module.exports.default = \*`). Each file should contain one function
+trigger and export it as the default export. Almost every default behaviour can be customised by the settings object.
+
+### exportFunctions() Usage
+
+In your main entry point file, simply include these two lines of code:
 
 ```typescript
 /// entry point, index.js/ts
-import exportCloudFunctions from 'better-firebase-functions'
-exportCloudFunctions(__dirname, __filename, exports, './', './**/*.js') // You should probably always match .js
+import { exportFunctions } from 'better-firebase-functions';
+exportFunctions(__filename, exports);
 ```
 
+The function will export all found triggers from your index file.
+
+And then in your modules, define your function triggers:
+
 ```ts
-/// ./auth/newUser.ts
+/// ./http/new-user.func.ts
 import * as functions from 'firebase-functions'
 export default functions.https.onRequest(app)...
 ```
 
-- The `__dirname, __filename, exports` parameters of the function should most likely remain that way, unless you know
-what you're doing. They tell the function where to look, how to avoid exporting it's own file and to which object to attach
-exports.
-- The last two params are optional because they have defaults. By default, the module will export all default exports from
-every .js file found in its containing directory and all subdirectories (onto a properly nested exports object).
-- For JS projects that cant use `export default` syntax, just use equivalent `module.exports.default = ...`.
+The above function will automatically be exported as `http-newUser`, because it is in a directory called `http` and is
+in a file called `new-user.func.ts`. The dash `http-` denotes that the function is in a submodule group called `http`,
+meaning the functions found in the `http` directory can be exported using `firebase deploy --only functions: http`.
 
-### Structure
+#### How it Works
 
-- Ensure that each file that contains a cloud function only contains one cloud function.
-- Each file that exports a cloud function must use `export default` syntax. If you are using JS instead of TS, you may just
-use `module.exports.default` to mimic this behavior. The function will attach the default export of every function file
-to the global export for Cloud Functions at the appropriate field path (key/sub-key of the object) onThe exports object.
-- You may include additional functions in the same files that hold your cloud functions. You may also require
-other files from your project, even within the same directories. This module will only attach default exports to your exports object.
-- If you want to use default exports and you don't want them exported from your entry point file, you can use the glob pattern to
-match files that end in, for example, `*.function.js` (please note, even if you work with .ts files, ensure your glob matches files after they have been transpiled for upload. This means you'll probably want to match `./**/*.js` files).
-- You can set the root functions directory to be different from the entry point file. Some put all func files in a subdirectory.
-Some choose to put their index.js in the root of the functions folder. Either way, you can use a combination of the `dir` and `glob` parameters to specify any functions files you want.
-- This means you can arrange your project's files and directories however you like.
-- Each directory is a function group you can choose to deploy on its own using the `--only functions: groupA.folderB` CLI syntax. In that
-example, only functions found in a directory `folderB`, which is in directory `groupA`, which is in the specified root functions directory will be deployed.
-- The module will automatically name your functions after the file name and containing directory names. Functions nested in directories will correspond to sub-properties in the exports object. So for example, a function found in `./auth/newUser.js` will be called `auth-newUser` and set to exports.auth.newUser - this is how the function groups can be automated by simple file structure.
+exportFunctions() will search the given directory using provided glob matching pattern and export firebase cloud
+functions for you automatically, without you having to require each file individually. All matching files will then be
+checked for a default export. The filename and path is used to determine the function name. The function triggers are
+nested on the exports object to mirror the folder structure, allowing for deployment groups. You can set the glob
+pattern to only pick up files that end in _.cf.js or _.function.js Be sure to _still_ use `js` as your file extension
+when matching if you are using Typescript as this code is executed at runtime once the files are compiled.
 
-## Benefits
+#### logger : object, enableLogger: boolean
 
-There are a number of issues with the official way of deploying Firebase Cloud Functions. When there are many functions, the global
-scope often becomes polluted, taking up more memory, slowing down functions and slowing down the cold-start time of each function
-instance. As well as this, if you decide to lazy-load modules to mitigate this issue, it can become cumbersome to manually manage
-global variables and instantiate modules when needed.
+You may specify a custom log function, and enable/disable performance logging.
 
-The way this module exposes functions and global scope to cloud functions means that each function invocation loads only exactly what
-it needs for that one function instance, and nothing more. This keeps the module/global scope clean.
+#### funcNameFromRelPath : method
 
-You can simply `import`/`require()` all the modules you need at the top of the file for each function. Because this module separates
-the module scope of each function, the dependencies of one function will not be loaded when a different function instance is invocated.
+You may provide a custom function for generating function names based on the file path the module was found. The input
+is a string that is the relative path to the module, and the expected output is a string with the name of your function.
+Submodules (module groups) are separated by a dash `-` and the names should be in camelCase. The input filenames should
+be in kebab-case.
 
-This greatly reduces cold-boot times while simplifying and reducing the need to lazy-load cached global dependencies in the function instance' global scope.
+#### functionDirectoryPath : string
 
-## Warnings
+Provide a custom subdirectory to search for function triggers.
+
+#### searchGlob: string
+
+This is a glob pattern that allows you to define which files to search for.
+
+#### Other Options
+
+The provided typings contain jsdoc comments that should provide intellisense about the various configuration options
+available and how to use them.
+
+#### If my tests are in the same directory
+
+As long as your test files do not provide a default export, they won't be included in the export. Otherwise, you can use
+glob patterns to only include certain files (`*.func.js`).
+
+You can now also control how the function trigger export is "found" from each module file. For example, instead of using
+a default export, you can opt to use a named export called `export const functionTrigger = functions...`.
+
+#### Warnings
 
 Try to avoid collisions, where two modules are exported to the same path.
 
-This module does its best to convert dashes in files to camelCase and multi-extensions on
-files `user.function.js` to valid names, so as to avoid misnaming a function.
+This module does its best to convert dashes in files to camelCase and multi-extensions on files `user.function.js` to
+valid names, so as to avoid misnaming a function.
 
-You can use the glob pattern to specify which files to target, but be careful:
-`user.test.js & user.function.js`, if they are both included accidentally, will collide with each other
-as they are both called `user` and the extension is stripped away.
+You can use the glob pattern to specify which files to target, but be careful: `user.test.js & user.function.js`, if
+they are both included accidentally, will collide with each other as they are both called `user` and the extension is
+stripped away (provided they both have a default export)
 
-If you need both files, then you can optionally change their names to use camelCase or use a dash `-` (which
-are also automatically converted to camelCase) leaving only the dot in .js.
+If you need both files, then you can optionally change their names to use camelCase or use a dash `-` (which are also
+automatically converted to camelCase) leaving only the dot in .js.
 
-### Todo
-
-- Implement Greenkeeper.
-- Testing git hooks.
-- Compile to the latest Node version supported by Firebase - 10.15.3, es2018.
-- Better error handling and edge cases, console.error() errors.
-- Performance review.
-
-### Contribute
+## Contribute
 
 Please contribute to this project by submitting a pull request. Use Commitizen to generate correct commit messages.
