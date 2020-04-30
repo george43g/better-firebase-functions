@@ -93,4 +93,9 @@ describe('exportFunctions() function exporter test suite', () => {
     expect(result).toHaveProperty(filePathToPropertyPath(testFiles[1]));
     expect(Object.keys(result)).toHaveLength(1);
   });
+
+  it('will still work with glob match prepending ./ as in ./**/*.js', () => {
+    expect(exportTestFactory({ searchGlob: './**/*.func.ts' })).toHaveProperty(filePathToPropertyPath(testFiles[1]));
+    expect(exportTestFactory({ searchGlob: '**/*.func.ts' })).toHaveProperty(filePathToPropertyPath(testFiles[1]));
+  });
 });
