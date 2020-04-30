@@ -22,7 +22,7 @@ const funcNameFromRelPath = (relpath: string): string => {
 };
 
 /**
- * @deprecated as of version 4.0.0 - use exportFunctions() instead
+ * @deprecated as of version 3.1.2 - use exportFunctions() instead
  *
  * This function will search the given directory using provided glob matching pattern and
  * export firebase cloud functions for you automatically, without you having to require
@@ -41,7 +41,7 @@ const funcNameFromRelPath = (relpath: string): string => {
  * @example import exportCloudFunctions from 'better-firebase-functions'
  * exportCloudFunctions(__dirname, __filename, exports, './', GLOB_PATTERN);
  */
-export default (__dirname: string, __filename: string, exports: any, dir?: string, globPattern?: string) => {
+export default function (__dirname: string, __filename: string, exports: any, dir?: string, globPattern?: string) {
   // eslint-disable-next-line no-console
   console.warn(msg);
   const funcDir = dir || './';
@@ -63,4 +63,4 @@ export default (__dirname: string, __filename: string, exports: any, dir?: strin
     }
   }
   return exports;
-};
+}
