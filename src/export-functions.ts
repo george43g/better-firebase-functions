@@ -93,7 +93,7 @@ export interface ExportFunctionsConfig {
    * @returns must return the actual function trigger to be exported to firebase functions.
    * @example exportFunctions({extractTrigger: (obj) => obj['default']})
    */
-  extractTrigger: (inputModule: any) => any;
+  extractTrigger?: (inputModule: any) => any;
 
   /**
    * Boolean value - wether to enable logging performance metrics
