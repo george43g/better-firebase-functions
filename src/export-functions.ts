@@ -157,7 +157,7 @@ export function exportFunctions({
   __filename,
   exports,
   functionDirectoryPath = './',
-  searchGlob = './**/*.js',
+  searchGlob = '**/*.js',
   funcNameFromRelPath = funcNameFromRelPathDefault,
   enableLogger = false,
   logger = console,
@@ -165,10 +165,9 @@ export function exportFunctions({
   __dirname,
 }: ExportFunctionsConfig) {
   const log = enableLogger ? logger : disabledLogger;
-  const cwd = resolve(__dirname ?? getDirnameFromFilename(__filename), functionDirectoryPath);
-
+  const cwd = resolve(__dirname ?? getDirnameFromFilename(__filename), functionDirectoryPath); /* ? */
   log.time(dirSearchMsg);
-  const files = glob.sync(searchGlob, { cwd });
+  const files = glob.sync(searchGlob, { cwd }); /* ? */
   log.timeEnd(dirSearchMsg);
 
   const moduleSearchMsg = `[better-firebase-functions] Search for Module '${getFunctionInstance()}'`;
@@ -177,10 +176,11 @@ export function exportFunctions({
 
   // eslint-disable-next-line no-restricted-syntax
   for (const file of files) {
-    const funcName = funcNameFromRelPath(file); /* ? */
+    const absPath = resolve(cwd, file);
+    const standardRelativePath = absPath.substr(cwd.length + 1); /* ? */
+    const funcName = funcNameFromRelPath(standardRelativePath); /* ? */
     if (isDeployment() || funcNameMatchesInstance(funcName)) {
       if (!isDeployment()) log.timeEnd(moduleSearchMsg);
-      const absPath = resolve(cwd, file);
       if (absPath.slice(0, -2) === __filename.slice(0, -2)) continue; // Prevent exporting self
 
       if (!isDeployment()) log.time(coldModuleMsg);
