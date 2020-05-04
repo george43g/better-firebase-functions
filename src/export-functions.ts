@@ -110,6 +110,12 @@ export interface ExportFunctionsConfig {
     log(msg: string): void;
     [key: string]: any;
   };
+
+  /**
+   * When enabled, the function only exports the module path as the value of each exports object key
+   * Usefull for build tools or debugging
+   */
+  exportPathMode?: boolean;
 }
 
 const disabledLogger = {
@@ -163,6 +169,7 @@ export function exportFunctions({
   logger = console,
   extractTrigger = getTriggerFromModule,
   __dirname,
+  exportPathMode = false,
 }: ExportFunctionsConfig) {
   const log = enableLogger ? logger : disabledLogger;
   const cwd = resolve(__dirname ?? getDirnameFromFilename(__filename), functionDirectoryPath); /* ? */
@@ -195,6 +202,7 @@ export function exportFunctions({
       if (!isDeployment()) log.timeEnd(coldModuleMsg);
       if (!funcTrigger) continue;
       const propPath = funcName.replace(/-/g, '.'); /* ? */
+      if (exportPathMode) funcTrigger = standardRelativePath;
       set(exports, propPath, funcTrigger);
     }
   } // End loop
