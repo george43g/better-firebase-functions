@@ -3,7 +3,7 @@
   "compilerOptions": {
     "lib": ["es2017"],
     "target": "es2017",
-    "module": "CommonJS",
+    "module": "esnext",
     "moduleResolution": "node",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
