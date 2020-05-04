@@ -90,6 +90,12 @@ By passing this method you can customise how `exportFunctions()` gets the functi
 behaviour is to look for the `default` export, but you may specify a different way such as a named export. The function
 is given the module object and must return the function trigger.
 
+#### exportPathMode: boolean
+
+This flag will result in the export object holding the relative paths to the detected modules as values for the export
+keys rather than the actual module or function trigger. This option is useful when using this package as part of a build
+process or for debugging.
+
 ### Other Options
 
 The provided typings contain jsdoc comments that should provide intellisense about the various configuration options
