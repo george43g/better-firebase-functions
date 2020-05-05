@@ -22,8 +22,6 @@ const funcNameFromRelPath = (relpath: string): string => {
 };
 
 /**
- * @deprecated as of version 3.1.2 - use exportFunctions() instead
- *
  * This function will search the given directory using provided glob matching pattern and
  * export firebase cloud functions for you automatically, without you having to require
  * each file individually. It also applies speed optimisations for cold-start.
@@ -40,6 +38,9 @@ const funcNameFromRelPath = (relpath: string): string => {
  *
  * @example import exportCloudFunctions from 'better-firebase-functions'
  * exportCloudFunctions(__dirname, __filename, exports, './', GLOB_PATTERN);
+ *
+ * @deprecated as of version 3.1.2 - use exportFunctions() named export instead,
+ * `import { exportFunctions } from 'better-firebase-functions'`
  */
 export default function (__dirname: string, __filename: string, exports: any, dir?: string, globPattern?: string) {
   // eslint-disable-next-line no-console
@@ -56,8 +57,8 @@ export default function (__dirname: string, __filename: string, exports: any, di
     const funcName = funcNameFromRelPath(relPath); /* ? */
     const propPath = funcName.replace(/-/g, '.'); /* ? */
     if (!process.env.FUNCTION_NAME || process.env.FUNCTION_NAME === funcName) {
-      // eslint-disable-next-line import/no-dynamic-require, global-require
-      const module = require(resolve(__dirname, funcDir, relPath));
+      // eslint-disable-next-line import/no-dynamic-require, global-require, no-eval
+      const module = eval('require')(resolve(__dirname, funcDir, relPath));
       if (!module.default) continue;
       set(exports, propPath, module.default);
     }
