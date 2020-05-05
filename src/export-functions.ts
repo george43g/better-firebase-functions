@@ -193,8 +193,9 @@ export function exportFunctions({
       if (!isDeployment()) log.time(coldModuleMsg);
       let funcTrigger: any;
       try {
-        // eslint-disable-next-line import/no-dynamic-require, global-require
-        funcTrigger = extractTrigger(require(absPath));
+        // eslint-disable-next-line no-eval
+        const mod = eval('require')(absPath); // This is to preserve require call in webpack
+        funcTrigger = extractTrigger(mod);
       } catch (err) {
         console.error(err);
         continue;
