@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/gramstr/better-firebase-functions/compare/v3.2.2...v3.3.0) (2020-05-05)
+
+
+### Features
+
+* **funcnamefromrelpathdefault:** export built in func name generator ([6428095](https://github.com/gramstr/better-firebase-functions/commit/6428095da7c9889918df3f2cbbd6109476aff595))
+
 ## [3.2.2](https://github.com/gramstr/better-firebase-functions/compare/v3.2.1...v3.2.2) (2020-05-05)
 
 
