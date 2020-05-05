@@ -190,6 +190,10 @@ export function exportFunctions({
       if (!isDeployment()) log.timeEnd(moduleSearchMsg);
       if (absPath.slice(0, -2) === __filename.slice(0, -2)) continue; // Prevent exporting self
 
+      if (exportPathMode) {
+        set(exports, funcName.replace(/-/g, '.'), standardRelativePath);
+        continue;
+      }
       if (!isDeployment()) log.time(coldModuleMsg);
       let funcTrigger: any;
       try {
@@ -203,7 +207,6 @@ export function exportFunctions({
       if (!isDeployment()) log.timeEnd(coldModuleMsg);
       if (!funcTrigger) continue;
       const propPath = funcName.replace(/-/g, '.'); /* ? */
-      if (exportPathMode) funcTrigger = standardRelativePath;
       set(exports, propPath, funcTrigger);
     }
   } // End loop
