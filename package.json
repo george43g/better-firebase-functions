@@ -37,15 +37,18 @@
     "@commitlint/cli": "^8.3.5",
     "@commitlint/config-conventional": "^8.3.4",
     "@commitlint/travis-cli": "^8.3.5",
+    "@semantic-release/changelog": "^5.0.1",
+    "@semantic-release/git": "^9.0.0",
     "@types/fs-extra": "^8.1.0",
     "@types/glob": "^7.1.1",
     "@types/jest": "^25.2.1",
     "@types/lodash.set": "^4.3.6",
     "@types/rimraf": "^3.0.0",
     "@types/tmp": "^0.1.0",
-    "@zeit/ncc": "*",
     "@typescript-eslint/eslint-plugin": "^2.28.0",
     "@typescript-eslint/parser": "^2.28.0",
+    "@zeit/ncc": "~0.22.1",
+    "camelcase": "^6.0.0",
     "commitizen": "^4.0.4",
     "cz-conventional-changelog": "^3.1.0",
     "eslint": "^6.8.0",
@@ -56,22 +59,18 @@
     "eslint-plugin-react": "^7.19.0",
     "firebase-admin": ">= 5.0.0 < 9",
     "fs-extra": "^9.0.0",
+    "glob": "^7.1.6",
     "husky": "^4.2.5",
     "jest": "^25.3.0",
+    "lodash.set": "^4.3.2",
     "rimraf": "^3.0.2",
     "semantic-release": "^17.0.6",
     "tmp": "^0.2.0",
     "ts-jest": "^25.4.0",
     "ts-node": "^8.8.2",
-    "camelcase": "^6.0.0",
-    "glob": "^7.1.6",
-    "lodash.set": "^4.3.2",
     "typescript": "^3.8.3"
   },
   "dependencies": {},
-  "peerDependencies": {
-    "firebase-admin": ">= 5.0.0 < 9"
-  },
   "jest": {
     "roots": [
       "<rootDir>/src",
@@ -86,7 +85,27 @@
     }
   },
   "release": {
-    "branch": "master"
+    "branch": "master",
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/changelog",
+        {
+          "changelogFile": "CHANGELOG.md"
+        }
+      ],
+      "@semantic-release/npm",
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "CHANGELOG.md"
+          ]
+        }
+      ],
+      "@semantic-release/github"
+    ]
   },
   "config": {
     "commitizen": {
