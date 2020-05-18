@@ -109,7 +109,7 @@ glob patterns to only include certain files (`*.func.js`).
 You can now also control how the function trigger export is "found" from each module file. For example, instead of using
 a default export, you can opt to use a named export called `export const functionTrigger = functions...`.
 
-#### Warnings
+### Warnings
 
 Try to avoid collisions, where two modules are exported to the same path.
 
@@ -122,6 +122,12 @@ stripped away (provided they both have a default export)
 
 If you need both files, then you can optionally change their names to use camelCase or use a dash `-` (which are also
 automatically converted to camelCase) leaving only the dot in .js.
+
+#### Node 8
+
+If you are using Firebase Functions in Node v8, then the master branch will not work with default settings. The
+funcNameFromRelPath method uses a dependency called `camelCase` which crashes in v8. There is a specific branch for Node
+v8 called `node8` that can be installed via `npm install git@github.com:gramstr/better-firebase-functions.git#node8`
 
 ## Contribute
 
