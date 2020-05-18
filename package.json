@@ -2,6 +2,9 @@
   "name": "better-firebase-functions",
   "version": "3.0.0",
   "description": "This package exposes a function that improves upon the standard way of bundling functions for Firebase Cloud Functions. It includes the ability to glob-match files that contain a cloud function that are then automatically exported. See README.md for more info.",
+  "engines": {
+    "node": "8"
+  },
   "main": "lib/index.js",
   "types": "lib/types/index.d.ts",
   "files": [
@@ -48,7 +51,7 @@
     "@typescript-eslint/eslint-plugin": "^2.28.0",
     "@typescript-eslint/parser": "^2.28.0",
     "@zeit/ncc": "~0.22.1",
-    "camelcase": "^6.0.0",
+    "camelcase": "4.1.0",
     "commitizen": "^4.0.4",
     "cz-conventional-changelog": "^3.1.0",
     "eslint": "^6.8.0",
@@ -57,7 +60,7 @@
     "eslint-plugin-jest": "^23.8.2",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "eslint-plugin-react": "^7.19.0",
-    "fs-extra": "^9.0.0",
+    "fs-extra": "6.0.1",
     "glob": "^7.1.6",
     "husky": "^4.2.5",
     "jest": "^25.3.0",
