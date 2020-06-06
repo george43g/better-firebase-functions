@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/gramstr/better-firebase-functions/compare/v3.3.2...v3.4.0) (2020-06-06)
+
+
+### Features
+
+* **extracttriggers:** function name param to allow multi-trigger files ([4e51dbb](https://github.com/gramstr/better-firebase-functions/commit/4e51dbb4a7c3482dc0a3826e3e7feba2628a3dcf)), closes [#6](https://github.com/gramstr/better-firebase-functions/issues/6)
+
 ## [3.3.2](https://github.com/gramstr/better-firebase-functions/compare/v3.3.1...v3.3.2) (2020-06-06)
 
 
