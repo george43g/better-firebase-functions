@@ -130,7 +130,7 @@ const disabledLogger = {
   },
 };
 
-const getFunctionInstance = () => process.env.K_SERVICE;
+const getFunctionInstance = () => process.env.FUNCTION_NAME || process.env.K_SERVICE;
 const isDeployment = () => !getFunctionInstance();
 const funcNameMatchesInstance = (funcName: string) => funcName === getFunctionInstance();
 const getTriggerFromModule = (inputModule: any) => inputModule?.default;

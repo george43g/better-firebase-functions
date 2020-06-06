@@ -21,6 +21,9 @@ const funcNameFromRelPath = (relpath: string): string => {
   return funcName.replace(/\//g, '-');
 };
 
+function getEnvFuncName() {
+  return process.env.FUNCTION_NAME || process.env.K_SERVICE;
+}
 /**
  * This function will search the given directory using provided glob matching pattern and
  * export firebase cloud functions for you automatically, without you having to require
@@ -56,7 +59,7 @@ export default function (__dirname: string, __filename: string, exports: any, di
     const relPath = absPath.substr(absFuncDir.length + 1); /* ? */
     const funcName = funcNameFromRelPath(relPath); /* ? */
     const propPath = funcName.replace(/-/g, '.'); /* ? */
-    if (!process.env.K_SERVICE || process.env.K_SERVICE === funcName) {
+    if (!getEnvFuncName() || getEnvFuncName() === funcName) {
       // eslint-disable-next-line import/no-dynamic-require, global-require, no-eval
       const module = eval('require')(resolve(__dirname, funcDir, relPath));
       if (!module.default) continue;
