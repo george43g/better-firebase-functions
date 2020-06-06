@@ -1,3 +1,10 @@
+## [3.3.2](https://github.com/gramstr/better-firebase-functions/compare/v3.3.1...v3.3.2) (2020-06-06)
+
+
+### Bug Fixes
+
+* **exportfunctions:** backwards compatible with FUNCTION_NAME env var ([ca95831](https://github.com/gramstr/better-firebase-functions/commit/ca9583191bacd75c29886dbc6eba685994278e47)), closes [#7](https://github.com/gramstr/better-firebase-functions/issues/7) [#7](https://github.com/gramstr/better-firebase-functions/issues/7)
+
 ## [3.3.1](https://github.com/gramstr/better-firebase-functions/compare/v3.3.0...v3.3.1) (2020-06-06)
 
 
