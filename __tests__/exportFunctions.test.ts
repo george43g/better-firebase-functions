@@ -29,7 +29,7 @@ describe('exportFunctions() function exporter test suite', () => {
 
   beforeEach(() => {
     jest.resetAllMocks();
-    delete process.env.FUNCTION_NAME;
+    delete process.env.K_SERVICE;
   });
 
   beforeAll(() => {
@@ -88,7 +88,7 @@ describe('exportFunctions() function exporter test suite', () => {
   });
 
   it('should only extract one module when FUNCTION_NAME present', () => {
-    process.env.FUNCTION_NAME = bff.funcNameFromRelPathDefault(testFiles[1]);
+    process.env.K_SERVICE = bff.funcNameFromRelPathDefault(testFiles[1]);
     const result = exportTestFactory({ enableLogger: true });
     expect(result).not.toHaveProperty(filePathToPropertyPath(testFiles[2]));
     expect(result).toHaveProperty(filePathToPropertyPath(testFiles[1]));
