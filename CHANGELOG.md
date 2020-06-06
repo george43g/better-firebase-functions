@@ -1,3 +1,10 @@
+## [3.3.1](https://github.com/gramstr/better-firebase-functions/compare/v3.3.0...v3.3.1) (2020-06-06)
+
+
+### Bug Fixes
+
+* **exportfunctions:** process.env.FUNCTION_NAME is now called K_SERVICE ([956e52c](https://github.com/gramstr/better-firebase-functions/commit/956e52cde508bc496bf266f331a0c679df6bcf08)), closes [#7](https://github.com/gramstr/better-firebase-functions/issues/7)
+
 # [3.3.0](https://github.com/gramstr/better-firebase-functions/compare/v3.2.2...v3.3.0) (2020-05-05)
 
 
