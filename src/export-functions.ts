@@ -90,10 +90,13 @@ export interface ExportFunctionsConfig {
    * the behaviour of es6 modules using `export default`. You may customise this behaviour.
    * @param inputModule This object is the required CommonJS module that will be passed
    * as the only argument to this function.
+   * @param currentFunctionName this is only present if run during a function invocation
+   * rather than during deployment. It is useful if customising BFF to find more than
+   * one trigger per file.
    * @returns must return the actual function trigger to be exported to firebase functions.
    * @example exportFunctions({extractTrigger: (obj) => obj['default']})
    */
-  extractTrigger?: (inputModule: any) => any;
+  extractTrigger?: (inputModule: any, currentFunctionName?: string) => any;
 
   /**
    * Boolean value - wether to enable logging performance metrics
@@ -199,7 +202,7 @@ export function exportFunctions({
       try {
         // eslint-disable-next-line no-eval
         const mod = eval('require')(absPath); // This is to preserve require call in webpack
-        funcTrigger = extractTrigger(mod);
+        funcTrigger = extractTrigger(mod, getFunctionInstance());
       } catch (err) {
         console.error(err);
         continue;
