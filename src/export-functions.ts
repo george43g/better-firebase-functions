@@ -2,21 +2,21 @@
 import camelCase from 'camelcase';
 import glob from 'glob';
 import set from 'lodash.set';
-import { resolve } from 'path';
+import { resolve, sep } from 'path';
 
 function getDirnameFromFilename(__filename: string) {
-  return __filename.split('/').slice(0, -1).join('/');
+  return __filename.split(sep).slice(0, -1).join(sep);
 }
 
 export function funcNameFromRelPathDefault(relPath: string): string {
-  const relPathArray = relPath.split('/'); /* ? */
+  const relPathArray = relPath.split(sep); /* ? */
   const fileName = relPathArray.pop(); /* ? */
-  const relDirPathFunctionNameChunk = relPathArray.map((pathFragment) => camelCase(pathFragment)).join('/');
+  const relDirPathFunctionNameChunk = relPathArray.map((pathFragment) => camelCase(pathFragment)).join(sep);
   const fileNameFunctionNameChunk = camelCase(fileName!.split('.')[0]);
   const funcName = relDirPathFunctionNameChunk
-    ? `${relDirPathFunctionNameChunk}/${fileNameFunctionNameChunk}`
+    ? `${relDirPathFunctionNameChunk}${sep}${fileNameFunctionNameChunk}`
     : fileNameFunctionNameChunk;
-  return funcName.replace(/\//g, '-');
+  return funcName.replace(sep, '-');
 }
 
 /**
