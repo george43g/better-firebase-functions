@@ -1,3 +1,10 @@
+## [3.4.1](https://github.com/gramstr/better-firebase-functions/compare/v3.4.0...v3.4.1) (2020-06-08)
+
+
+### Bug Fixes
+
+* **funcnamefromrelpath:** handle windows path separator correctly ([9ad72b8](https://github.com/gramstr/better-firebase-functions/commit/9ad72b8184aa211ac2f62e2bbe57e4f10770dedd)), closes [#4](https://github.com/gramstr/better-firebase-functions/issues/4)
+
 # [3.4.0](https://github.com/gramstr/better-firebase-functions/compare/v3.3.2...v3.4.0) (2020-06-06)
 
 
