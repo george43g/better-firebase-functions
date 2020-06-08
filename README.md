@@ -9,6 +9,32 @@ This package is bundled into one module with 0 dependencies, and is designed to 
 reliable/redundant as possible. Suitable for production use in almost any project. Only one feature is available in this
 package to keep the bundle size as small as possible for performance reasons.
 
+## Installation
+
+Simply install from NPM:
+
+```sh
+npm install better-firebase-functions
+```
+
+1. Ensure your main entry point file contains only:
+
+```typescript
+// src/index.ts
+import { exportFunctions } from 'better-firebase-functions';
+
+exportFunctions({ __filename, exports });
+```
+
+2. Ensure your function triggers are structured like this:
+
+```typescript
+// src/auth/on-create.ts
+import * as functions from 'firebase-functions';
+
+export default functions.auth.user().onCreate(/* Function */);
+```
+
 ## exportFunctions()
 
 This function has two main features:
