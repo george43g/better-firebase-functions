@@ -11,12 +11,14 @@ function getDirnameFromFilename(__filename: string) {
 export function funcNameFromRelPathDefault(relPath: string): string {
   const relPathArray = relPath.split(sep); /* ? */
   const fileName = relPathArray.pop(); /* ? */
-  const relDirPathFunctionNameChunk = relPathArray.map((pathFragment) => camelCase(pathFragment)).join(sep);
-  const fileNameFunctionNameChunk = camelCase(fileName!.split('.')[0]);
+  const relDirPathFunctionNameChunk = relPathArray
+    .map((pathFragment) => camelCase(pathFragment))
+    .join("-");
+  const fileNameFunctionNameChunk = camelCase(fileName!.split(".")[0]);
   const funcName = relDirPathFunctionNameChunk
-    ? `${relDirPathFunctionNameChunk}${sep}${fileNameFunctionNameChunk}`
+    ? `${relDirPathFunctionNameChunk}-${fileNameFunctionNameChunk}`
     : fileNameFunctionNameChunk;
-  return funcName.replace(sep, '-');
+  return funcName;
 }
 
 /**
