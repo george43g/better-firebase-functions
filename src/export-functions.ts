@@ -190,7 +190,7 @@ export function exportFunctions({
   for (const file of files) {
     const absPath = resolve(cwd, file);
     const standardRelativePath = absPath.substr(cwd.length + 1); /* ? */
-    const funcName = funcNameFromRelPath(standardRelativePath); /* ? */
+    const funcName = funcNameFromRelPathDefault(standardRelativePath); /* ? */
     if (isDeployment() || funcNameMatchesInstance(funcName)) {
       if (!isDeployment()) log.timeEnd(moduleSearchMsg);
       if (absPath.slice(0, -2) === __filename.slice(0, -2)) continue; // Prevent exporting self
