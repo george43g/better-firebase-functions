@@ -16,7 +16,7 @@ export function funcNameFromRelPathDefault(relPath: string): string {
   const funcName = relDirPathFunctionNameChunk
     ? `${relDirPathFunctionNameChunk}${sep}${fileNameFunctionNameChunk}`
     : fileNameFunctionNameChunk;
-  return funcName.replace(sep, '-');
+  return funcName.split(sep).join('-');
 }
 
 /**
