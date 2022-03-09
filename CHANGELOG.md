@@ -1,3 +1,27 @@
+# [4.0.0](https://github.com/gramstr/better-firebase-functions/compare/v3.4.1...v4.0.0) (2022-03-09)
+
+
+### Bug Fixes
+
+* **exportfunctions:** deep directory case was broken ([4e29ad3](https://github.com/gramstr/better-firebase-functions/commit/4e29ad30d2afdc9649177d409d589c05fa621506))
+
+
+### Build System
+
+* **deps:** update all dependencies to latest versions & close dependabot generated auto updates ([4b8c287](https://github.com/gramstr/better-firebase-functions/commit/4b8c2875ecd43a3b8f91ced768a77abdf35bdd9a))
+
+
+### Features
+
+* **default.ts:** remove deprecated default export function ([f6fdbd2](https://github.com/gramstr/better-firebase-functions/commit/f6fdbd2689826c86aa3ba1939c6a642a4a583946))
+
+
+### BREAKING CHANGES
+
+* **deps:** Version upgrade of Node may be a breaking change
+* **default.ts:** The breaking change with this update is that any codebases utilising the default
+export will no longer work. Please update to use the exported named function exportFunctions.
+
 ## [3.4.1](https://github.com/gramstr/better-firebase-functions/compare/v3.4.0...v3.4.1) (2020-06-08)
 
 
