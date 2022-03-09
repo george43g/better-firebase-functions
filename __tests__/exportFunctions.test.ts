@@ -20,7 +20,7 @@ describe('exportFunctions() function exporter test suite', () => {
     'folder/new.func.ts',
     'folder/not-a-func.ts',
   ];
-  const { name: tempFuncDir, removeCallback } = tmp.dirSync();
+  const { name: tempFuncDir } = tmp.dirSync();
   const randOutput = Math.floor(Math.random() * 10);
   const filePathToPropertyPath = (moduleFilePath: string) => {
     const funcName = bff.funcNameFromRelPathDefault(moduleFilePath);
@@ -40,7 +40,6 @@ describe('exportFunctions() function exporter test suite', () => {
   afterAll(() => {
     rimfar.sync(tempFuncDir);
     tmp.setGracefulCleanup();
-    removeCallback();
   });
 
   const exportTestFactory = (configObj?: any) =>
