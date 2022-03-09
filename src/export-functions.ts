@@ -1,4 +1,4 @@
-/* eslint-disable no-console, no-continue */
+/* eslint-disable no-console, no-continue, no-unused-vars */
 import camelCase from 'camelcase';
 import glob from 'glob';
 import set from 'lodash.set';

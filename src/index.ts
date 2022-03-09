@@ -1,2 +1,1 @@
-export { ExportFunctionsConfig, exportFunctions, funcNameFromRelPathDefault } from './export-functions';
-export { default } from './default';
+export * from './export-functions';
