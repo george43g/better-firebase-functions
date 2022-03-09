@@ -1,9 +1,0 @@
-language: node_js
-node_js:
-  - node
-before_install:
-  - npm i -g npm@latest
-script:
-  - commitlint-travis
-  - npm test
-  - npm run release
