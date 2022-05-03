@@ -19,12 +19,13 @@ describe('exportFunctions() function exporter test suite', () => {
     './empty-folder/',
     'folder/new.func.ts',
     'folder/not-a-func.ts',
+    'folder/nestedFolder/sample-func.func.ts',
   ];
   const { name: tempFuncDir } = tmp.dirSync();
   const randOutput = Math.floor(Math.random() * 10);
   const filePathToPropertyPath = (moduleFilePath: string) => {
     const funcName = bff.funcNameFromRelPathDefault(moduleFilePath);
-    return funcName.replace('-', '.');
+    return funcName.split('-').join('.');
   };
 
   beforeEach(() => {
@@ -62,6 +63,8 @@ describe('exportFunctions() function exporter test suite', () => {
 
   it('should properly nest submodules found in directories', () => {
     expect(exportTestFactory()).toHaveProperty(filePathToPropertyPath(testFiles[4]), randOutput);
+    expect(exportTestFactory()).not.toHaveProperty(filePathToPropertyPath(testFiles[3]), randOutput);
+    expect(exportTestFactory()).toHaveProperty(filePathToPropertyPath(testFiles[6]), randOutput);
   });
 
   it('should correctly apply camelCase to kebab-case named files', () => {
@@ -109,9 +112,8 @@ describe('exportFunctions() function exporter test suite', () => {
   });
 
   it('will provide a paths mode for buildtools', () => {
-    expect(exportTestFactory({ exportPathMode: true })).toHaveProperty(
-      filePathToPropertyPath(testFiles[4]),
-      testFiles[4]
-    );
+    const output = exportTestFactory({ exportPathMode: true });
+    console.log(output);
+    expect(output).toHaveProperty(filePathToPropertyPath(testFiles[4]), testFiles[4]);
   });
 });
