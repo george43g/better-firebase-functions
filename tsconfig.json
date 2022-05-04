@@ -9,6 +9,7 @@
     "experimentalDecorators": true,
     "sourceMap": true,
     "rootDir": "src",
+    "strict": true,
     "outDir": "lib",
     "esModuleInterop": true,
     "types": ["node", "jest"]
