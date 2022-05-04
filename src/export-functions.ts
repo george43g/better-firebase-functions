@@ -1,4 +1,4 @@
-/* eslint-disable no-console, no-continue, no-unused-vars */
+/* eslint-disable no-continue, no-unused-vars */
 import camelCase from 'camelcase';
 import glob from 'glob';
 import set from 'lodash.set';
@@ -187,32 +187,31 @@ export function exportFunctions({
   // eslint-disable-next-line no-restricted-syntax
   for (const file of files) {
     const absPath = resolve(cwd, file);
-    const standardRelativePath = absPath.substr(cwd.length + 1); /* ? */
-    const funcName = funcNameFromRelPath(standardRelativePath); /* ? */
-    if (isDeployment() || funcNameMatchesInstance(funcName)) {
-      if (!isDeployment()) log.timeEnd(moduleSearchMsg);
-      if (absPath.slice(0, -2) === __filename.slice(0, -2)) continue; // Prevent exporting self
+    const normalizedRelativePath = absPath.slice(cwd.length + 1); // * This step normalises glob match search string
+    const funcName = funcNameFromRelPath(normalizedRelativePath); /* ? */
+    if (!isDeployment() && !funcNameMatchesInstance(funcName)) continue;
+    if (!isDeployment()) log.timeEnd(moduleSearchMsg);
+    if (absPath.slice(0, -2) === __filename.slice(0, -2)) continue; // Prevent exporting self
 
-      if (exportPathMode) {
-        set(exports, funcName.replace(/-/g, '.'), standardRelativePath);
-        continue;
-      }
-      if (!isDeployment()) log.time(coldModuleMsg);
-      let funcTrigger: any;
-      try {
-        // eslint-disable-next-line no-eval
-        const mod = eval('require')(absPath); // This is to preserve require call in webpack
-        funcTrigger = extractTrigger(mod, getFunctionInstance());
-      } catch (err) {
-        console.error(err);
-        continue;
-      }
-      if (!isDeployment()) log.timeEnd(coldModuleMsg);
-      if (!funcTrigger) continue;
-      const propPath = funcName.replace(/-/g, '.'); /* ? */
-      set(exports, propPath, funcTrigger);
+    if (exportPathMode) {
+      set(exports, funcName.split('-'), normalizedRelativePath);
+      continue;
     }
-  } // End loop
+    if (!isDeployment()) log.time(coldModuleMsg);
+    let funcTrigger: any;
+    try {
+      // eslint-disable-next-line no-eval
+      const mod = eval('require')(absPath); // This is to preserve require call in webpack
+      funcTrigger = extractTrigger(mod, getFunctionInstance());
+    } catch (err) {
+      console.warn(err);
+      continue;
+    }
+    if (!isDeployment()) log.timeEnd(coldModuleMsg);
+    if (!funcTrigger) continue;
+    const propPath = funcName.split('-');
+    set(exports, propPath, funcTrigger);
+  }
 
   if (isDeployment()) log.timeEnd(deployMsg);
   return exports;
