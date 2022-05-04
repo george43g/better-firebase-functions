@@ -20,6 +20,7 @@ describe('exportFunctions() function exporter test suite', () => {
     'folder/new.func.ts',
     'folder/not-a-func.ts',
     'folder/nestedFolder/sample-func.func.ts',
+    'folder/nestedFolder/sample-js-func.func.js',
   ];
   const { name: tempFuncDir } = tmp.dirSync();
   const randOutput = Math.floor(Math.random() * 10);
@@ -49,7 +50,7 @@ describe('exportFunctions() function exporter test suite', () => {
       __dirname: tempFuncDir,
       __filename: `${tempFuncDir}/pretend-index.ts`,
       exports: {},
-      searchGlob: '**/*.func.ts',
+      searchGlob: '**/*.func.{ts,js}',
       ...configObj,
     });
 
@@ -62,9 +63,9 @@ describe('exportFunctions() function exporter test suite', () => {
   });
 
   it('should properly nest submodules found in directories', () => {
-    expect(exportTestFactory()).toHaveProperty(filePathToPropertyPath(testFiles[4]), randOutput);
-    expect(exportTestFactory()).not.toHaveProperty(filePathToPropertyPath(testFiles[3]), randOutput);
-    expect(exportTestFactory()).toHaveProperty(filePathToPropertyPath(testFiles[6]), randOutput);
+    expect(exportTestFactory()).toHaveProperty(filePathToPropertyPath(testFiles[4]), randOutput); // func
+    expect(exportTestFactory()).not.toHaveProperty(filePathToPropertyPath(testFiles[3]), randOutput); // empty folder
+    expect(exportTestFactory()).toHaveProperty(filePathToPropertyPath(testFiles[6]), randOutput); // nested func
   });
 
   it('should correctly apply camelCase to kebab-case named files', () => {
@@ -115,5 +116,10 @@ describe('exportFunctions() function exporter test suite', () => {
     const output = exportTestFactory({ exportPathMode: true });
     console.log(output);
     expect(output).toHaveProperty(filePathToPropertyPath(testFiles[4]), testFiles[4]);
+  });
+
+  it('can detect both js and ts files using updated glob search - new default', () => {
+    const output = exportTestFactory({ exportPathMode: true });
+    expect(output).toHaveProperty(filePathToPropertyPath(testFiles[7]), testFiles[7]); // js file
   });
 });
