@@ -166,7 +166,7 @@ export function exportFunctions({
   __filename,
   exports,
   functionDirectoryPath = './',
-  searchGlob = '**/*.js',
+  searchGlob = '**/*.{js|ts}',
   funcNameFromRelPath = funcNameFromRelPathDefault,
   enableLogger = false,
   logger = console,
