@@ -49,7 +49,7 @@
     "@typescript-eslint/parser": "^5.14.0",
     "@vercel/ncc": "^0.36.0",
     "camelcase": "^6.3.0",
-    "commitizen": "^4.2.4",
+    "commitizen": "^4.3.0",
     "cz-conventional-changelog": "^3.3.0",
     "eslint": "^8.10.0",
     "eslint-config-airbnb": "^19.0.4",
