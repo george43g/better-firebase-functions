@@ -19,7 +19,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/gramstr/better-firebase-functions.git"
+    "url": "https://github.com/george43g/better-firebase-functions.git"
   },
   "keywords": [
     "firebase",
@@ -30,9 +30,9 @@
   "author": "George G",
   "license": "MPL-2.0",
   "bugs": {
-    "url": "https://github.com/gramstr/better-firebase-functions/issues"
+    "url": "https://github.com/george43g/better-firebase-functions/issues"
   },
-  "homepage": "https://github.com/gramstr/better-firebase-functions#readme",
+  "homepage": "https://github.com/george43g/better-firebase-functions#readme",
   "devDependencies": {
     "@commitlint/cli": "^16.2.1",
     "@commitlint/config-conventional": "^16.2.1",
