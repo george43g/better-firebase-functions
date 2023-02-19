@@ -1,3 +1,16 @@
+# [5.0.0](https://github.com/george43g/better-firebase-functions/compare/v4.0.0...v5.0.0) (2023-02-19)
+
+
+### Features
+
+* **exportfunctions:** update search glob to sensible default to find both js and ts files ([362ceab](https://github.com/george43g/better-firebase-functions/commit/362ceabb412abffc06d403bce33fb236bfab416e))
+
+
+### BREAKING CHANGES
+
+* **exportfunctions:** The new default search glob may break some setups in rare situations where js files
+and ts files are in the same directory.
+
 # [4.0.0](https://github.com/gramstr/better-firebase-functions/compare/v3.4.1...v4.0.0) (2022-03-09)
 
 
