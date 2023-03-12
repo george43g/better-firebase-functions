@@ -35,6 +35,8 @@ jobs:
         with:
           node-version: 18
           registry-url: https://registry.npmjs.org/
+          cache: 'npm'
       - run: npm ci
       - run: pwd
+      - run: rm -rf ../../_temp/.npmrc
       - run: npm run release
