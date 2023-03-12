@@ -1,6 +1,6 @@
 /* eslint-disable no-continue, no-unused-vars */
 import camelCase from 'camelcase';
-import glob from 'glob';
+import { globSync } from 'glob';
 import set from 'lodash.set';
 import { resolve, sep } from 'path';
 
@@ -177,7 +177,7 @@ export function exportFunctions({
   const log = enableLogger ? logger : disabledLogger;
   const cwd = resolve(__dirname ?? getDirnameFromFilename(__filename), functionDirectoryPath); /* ? */
   log.time(dirSearchMsg);
-  const files = glob.sync(searchGlob, { cwd }); /* ? */
+  const files = globSync(searchGlob, { cwd }); /* ? */
   log.timeEnd(dirSearchMsg);
 
   const moduleSearchMsg = `[better-firebase-functions] Search for Module '${getFunctionInstance()}'`;
