@@ -21,6 +21,10 @@
     "type": "git",
     "url": "https://github.com/george43g/better-firebase-functions.git"
   },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest"
+  },
   "keywords": [
     "firebase",
     "cloud-functions",
