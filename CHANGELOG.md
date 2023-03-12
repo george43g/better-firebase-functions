@@ -1,3 +1,16 @@
+# [6.0.0](https://github.com/george43g/better-firebase-functions/compare/v5.0.0...v6.0.0) (2023-03-12)
+
+
+### Build System
+
+* **deps:** modernize library & upgrade all deps ([eeadb33](https://github.com/george43g/better-firebase-functions/commit/eeadb33f338909e28906c50c8be4031987008a0b)), closes [#55](https://github.com/george43g/better-firebase-functions/issues/55)
+
+
+### BREAKING CHANGES
+
+* **deps:** Newer versions of all files should bump version number. Also, testing will now run
+on node 14, 16 & 18.
+
 # [5.0.0](https://github.com/george43g/better-firebase-functions/compare/v4.0.0...v5.0.0) (2023-02-19)
 
 
