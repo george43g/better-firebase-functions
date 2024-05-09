@@ -1,6 +1,6 @@
 /* eslint-disable jest/no-hooks */
 import fs from 'fs-extra';
-import rimfar from 'rimraf';
+import { rimrafSync } from 'rimraf';
 import { resolve } from 'path';
 import tmp from 'tmp';
 import * as bff from '../src/export-functions';
@@ -40,7 +40,7 @@ describe('exportFunctions() function exporter test suite', () => {
   });
 
   afterAll(() => {
-    rimfar.sync(tempFuncDir);
+    rimrafSync(tempFuncDir);
     tmp.setGracefulCleanup();
   });
 
