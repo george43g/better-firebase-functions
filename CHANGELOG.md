@@ -1,3 +1,10 @@
+## [6.0.1](https://github.com/george43g/better-firebase-functions/compare/v6.0.0...v6.0.1) (2024-05-10)
+
+
+### Bug Fixes
+
+* **firebase-functions:** fixed several bugs that prevented functions v2 from working ([26d74e3](https://github.com/george43g/better-firebase-functions/commit/26d74e3bcca69e370d13f0a6611093f47240ba9d))
+
 # [6.0.0](https://github.com/george43g/better-firebase-functions/compare/v5.0.0...v6.0.0) (2023-03-12)
 
 
