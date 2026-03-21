@@ -1,0 +1,39 @@
+{
+  "name": "better-firebase-functions-esbuild",
+  "version": "7.0.0",
+  "description": "esbuild plugin for optimized Firebase Cloud Functions builds. Per-function entry points with tree shaking.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsup",
+    "test": "echo 'No tests yet - integration tests coming in e2e suite'",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/george43g/better-firebase-functions.git",
+    "directory": "packages/esbuild"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": ["firebase", "cloud-functions", "esbuild", "esbuild-plugin", "optimization", "tree-shaking"],
+  "author": "George G",
+  "license": "MPL-2.0",
+  "engines": { "node": ">=18" },
+  "peerDependencies": {
+    "esbuild": ">=0.17.0"
+  },
+  "dependencies": {
+    "better-firebase-functions": "*"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

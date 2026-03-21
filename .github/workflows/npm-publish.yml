@@ -1,27 +1,22 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://help.github.com/actions/language-and-framework-guides/publishing-nodejs-packages
-
-name: Node.js Package
+name: CI
 
 on:
-  # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ master ]
+    branches: [master]
   pull_request:
-    branches: [ master ]
-  # release:
-  #   types: [created]
+    branches: [master]
+
 env:
   GH_TOKEN: ${{ secrets.GH_TOKEN }}
   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ 14, 16, 18, 20 ]
-    name: Node ${{ matrix.node }} test
+        node: [18, 20, 22]
+    name: Node ${{ matrix.node }} - Build & Test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,19 +24,27 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: 'npm'
       - run: npm ci
-      - run: npm test
+      - run: npx turbo build
+      - run: npx turbo test
 
   publish-npm:
-    needs: build
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 22
           registry-url: https://registry.npmjs.org/
           cache: 'npm'
       - run: npm ci
-      - run: pwd
-      - run: rm -rf ../../_temp/.npmrc
-      - run: npm run release
+      - run: npx turbo build
+      - name: Publish packages
+        run: |
+          cd packages/core && npm publish --access public || true
+          cd ../esbuild && npm publish --access public || true
+          cd ../webpack && npm publish --access public || true
+          cd ../rollup && npm publish --access public || true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
