@@ -7,6 +7,6 @@ exportFunctions({
   __filename,
   exports,
   functionDirectoryPath: './triggers',
-  searchGlob: '**/*.func.js',
+  searchGlob: '**/bff-benchmark-admin.func.js',
   enableLogger: true,
 });

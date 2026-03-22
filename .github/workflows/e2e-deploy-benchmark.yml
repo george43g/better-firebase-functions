@@ -1,0 +1,54 @@
+name: E2E Deploy Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      project_id:
+        description: Firebase project id for benchmark deployment
+        required: false
+        default: bff-e2e-testing
+
+jobs:
+  deploy-benchmark:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Write service account key
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_BFF_E2E }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "Missing secret: FIREBASE_SERVICE_ACCOUNT_BFF_E2E"
+            exit 1
+          fi
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$RUNNER_TEMP/gcp-sa.json"
+
+      - name: Install Firebase CLI
+        run: npm i -g firebase-tools
+
+      - name: Run deploy benchmark
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/gcp-sa.json
+          PROJECT_ID: ${{ github.event.inputs.project_id || 'bff-e2e-testing' }}
+        run: bash e2e/run-deploy-benchmark.sh
+
+      - name: Upload benchmark artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-benchmark-results
+          path: e2e/results/

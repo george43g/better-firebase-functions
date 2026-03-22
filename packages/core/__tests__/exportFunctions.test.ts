@@ -131,6 +131,7 @@ describe('exportFunctions() integration test suite', () => {
   });
 
   beforeEach(() => {
+    delete process.env.FUNCTION_TARGET;
     delete process.env.K_SERVICE;
     delete process.env.FUNCTION_NAME;
   });
@@ -200,6 +201,14 @@ describe('exportFunctions() integration test suite', () => {
     expect(Object.keys(result)).toHaveLength(1);
   });
 
+  it('should match lowercased K_SERVICE service names from Cloud Run (Gen 2)', () => {
+    process.env.K_SERVICE = 'camelcasefunc';
+    const result = exportTestFactory({ enableLogger: true });
+    expect(result).toHaveProperty(filePathToPropertyPath(testFiles[2]));
+    expect(result).not.toHaveProperty(filePathToPropertyPath(testFiles[1]));
+    expect(Object.keys(result)).toHaveLength(1);
+  });
+
   // ---- Cold-start optimization: FUNCTION_NAME (Gen 1) ----
 
   it('should only load the matching module when FUNCTION_NAME is set (Gen 1)', () => {
@@ -207,6 +216,27 @@ describe('exportFunctions() integration test suite', () => {
     const result = exportTestFactory({ enableLogger: true });
     expect(result).not.toHaveProperty(filePathToPropertyPath(testFiles[2]));
     expect(result).toHaveProperty(filePathToPropertyPath(testFiles[1]));
+    expect(Object.keys(result)).toHaveLength(1);
+  });
+
+  it('should prefer FUNCTION_TARGET when present (Functions Framework / Gen 2)', () => {
+    process.env.FUNCTION_NAME = `projects/test/databases/(default)/documents/${bff.funcNameFromRelPathDefault(
+      testFiles[2],
+    )}`;
+    process.env.FUNCTION_TARGET = bff.funcNameFromRelPathDefault(testFiles[1]);
+    const result = exportTestFactory({ enableLogger: true });
+    expect(result).toHaveProperty(filePathToPropertyPath(testFiles[1]));
+    expect(result).not.toHaveProperty(filePathToPropertyPath(testFiles[2]));
+    expect(Object.keys(result)).toHaveLength(1);
+  });
+
+  it('should match FUNCTION_NAME values containing full resource paths', () => {
+    process.env.FUNCTION_NAME = `projects/test/locations/us-central1/functions/${bff.funcNameFromRelPathDefault(
+      testFiles[2],
+    )}`;
+    const result = exportTestFactory({ enableLogger: true });
+    expect(result).toHaveProperty(filePathToPropertyPath(testFiles[2]));
+    expect(result).not.toHaveProperty(filePathToPropertyPath(testFiles[1]));
     expect(Object.keys(result)).toHaveLength(1);
   });
 
@@ -284,6 +314,7 @@ describe('exportFunctionsAsync() async test suite', () => {
   });
 
   beforeEach(() => {
+    delete process.env.FUNCTION_TARGET;
     delete process.env.K_SERVICE;
     delete process.env.FUNCTION_NAME;
   });

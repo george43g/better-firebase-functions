@@ -41,14 +41,31 @@ export function funcNameFromRelPathDefault(relPath: string): string {
 
 /** Returns the running function instance name, or undefined during deployment */
 const getFunctionInstance = (): string | undefined =>
-  process.env.FUNCTION_NAME || process.env.K_SERVICE || undefined;
+  process.env.FUNCTION_TARGET || process.env.FUNCTION_NAME || process.env.K_SERVICE || undefined;
+
+const canonicalizeFunctionName = (name: string | undefined): string =>
+  (name ?? '').replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+const getNameCandidates = (name: string | undefined): string[] => {
+  if (!name) return [];
+  const raw = name.trim();
+  if (!raw) return [];
+  const lastPathSegment = raw.split('/').filter(Boolean).at(-1);
+  return Array.from(new Set([raw, ...(lastPathSegment ? [lastPathSegment] : [])]));
+};
 
 /** True when Firebase CLI is deploying (no function instance env var set) */
 const isDeployment = (): boolean => !getFunctionInstance();
 
 /** True when the derived function name matches the currently running instance */
-const funcNameMatchesInstance = (funcName: string): boolean =>
-  funcName === getFunctionInstance();
+const funcNameMatchesInstance = (funcName: string): boolean => {
+  const instance = getFunctionInstance();
+  if (!instance) return false;
+  const canonicalFuncName = canonicalizeFunctionName(funcName);
+  return getNameCandidates(instance).some((candidate) => {
+    return funcName === candidate || canonicalFuncName === canonicalizeFunctionName(candidate);
+  });
+};
 
 // ---------------------------------------------------------------------------
 // Module loading

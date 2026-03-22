@@ -60,3 +60,6 @@ Thumbs.db
 
 # Pack output
 *.tgz
+
+# E2E benchmark artifacts (generated at runtime, not source)
+e2e/results/

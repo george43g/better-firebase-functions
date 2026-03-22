@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "bff-e2e-testing"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }
