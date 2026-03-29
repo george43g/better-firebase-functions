@@ -1,110 +1,112 @@
 # better-firebase-functions-rollup
 
-**Rollup plugin for optimized Firebase Cloud Functions builds.**
+Rollup plugin for `better-firebase-functions`.
 
-[![npm](https://img.shields.io/npm/v/better-firebase-functions-rollup)](https://www.npmjs.com/package/better-firebase-functions-rollup)
+This plugin discovers your Firebase function files using the same config already present in your BFF entry point, then emits one bundled chunk per function.
 
-Part of the [`better-firebase-functions`](https://github.com/george43g/better-firebase-functions) monorepo.
-
----
-
-## Why?
-
-The core `better-firebase-functions` library reduces cold-start time by only loading the one function module that matches the running instance at runtime. The Rollup plugin takes this further: each function gets its own **independently bundled, tree-shaken output file**. On cold start, Node.js parses only a small, tight bundle with exactly the code that function needs.
-
----
-
-## Installation
+## Install
 
 ```sh
-npm install --save-dev better-firebase-functions-rollup rollup
+npm install -D better-firebase-functions-rollup rollup
 ```
 
----
+## How discovery works
+
+The plugin executes your entry point in a special BFF build-discovery mode. That means it reuses the exact runtime config already passed to `exportFunctions()` or `exportFunctionsAsync()`:
+
+- `functionDirectoryPath`
+- `searchGlob`
+- `funcNameFromRelPath`
+- `__dirname`
+
+In the common case you only provide `entryPoint` to the plugin. No duplicated glob config is required.
 
 ## Usage
 
+Keep your runtime config in the entry point:
+
 ```typescript
-// rollup.config.ts
+// src/index.ts
+import { exportFunctions } from 'better-firebase-functions';
+
+exportFunctions({
+  __filename,
+  exports,
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+});
+```
+
+Then configure Rollup:
+
+```typescript
 import { resolve } from 'path';
 import { bffRollupPlugin, bffRollupOutput } from 'better-firebase-functions-rollup';
 
 export default {
   input: resolve(__dirname, 'src/index.ts'),
-
   output: bffRollupOutput({
     dir: resolve(__dirname, 'dist'),
     mainFileName: 'main.js',
     format: 'cjs',
   }),
-
   plugins: [
     bffRollupPlugin({
       entryPoint: resolve(__dirname, 'src/index.ts'),
-      functionDirectoryPath: './functions',
-      searchGlob: '**/*.func.ts',
       verbose: true,
     }),
-    // Add your TypeScript plugin, node-resolve, etc. here
   ],
-
-  external: ['firebase-admin', 'firebase-functions'],
 };
 ```
 
-**Output layout:**
+## Output layout
 
-```
-dist/
-  main.js            ← entry point
-  auth/
-    onCreate.js      ← auth-onCreate function, independently bundled
-  http/
-    getUser.js       ← http-getUser function, independently bundled
+If the source trigger is:
+
+```text
+src/functions/auth/on-create.func.ts
 ```
 
----
+...the bundled output will be:
+
+```text
+dist/main.js
+dist/functions/auth/on-create.func.js
+```
+
+The runtime layout is preserved, so `main.js` can keep using the same `functionDirectoryPath` and `searchGlob` you configured in the entry point.
 
 ## API
 
 ### `bffRollupPlugin(options)`
 
-Returns a Rollup `Plugin`. Discovers function files at build start and emits each as an additional chunk.
-
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `entryPoint` | `string` | — | **Required.** Absolute path to your entry point (`index.ts`) |
-| `functionDirectoryPath` | `string` | `'./'` | Relative path from entry point to functions directory |
-| `searchGlob` | `string` | `'**/*.{js,ts}'` | Glob pattern for function files |
-| `funcNameFromRelPath` | `function` | built-in | Custom function name generator |
-| `verbose` | `boolean` | `false` | Log discovered entry points |
+| Option | Description |
+|---|---|
+| `entryPoint` | Required entry point path used for build-discovery |
+| `verbose` | Logs discovered functions and output paths |
+| `__dirname` / `functionDirectoryPath` / `searchGlob` / `funcNameFromRelPath` | Fallback manual discovery overrides |
 
 ### `bffRollupOutput(options)`
 
-Returns a Rollup `OutputOptions` object configured for Firebase Functions output.
+Returns a Rollup `output` config that preserves the runtime BFF layout for bundled triggers.
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `dir` | `string` | — | **Required.** Output directory |
-| `mainFileName` | `string` | `'main.js'` | Output filename for the main/index chunk |
-| `format` | `'cjs' \| 'esm'` | `'cjs'` | Output module format |
+## Fallback manual overrides
 
-This helper configures `entryFileNames` to convert dash-separated function names (e.g. `auth-onCreate`) to directory-nested paths (e.g. `auth/onCreate.js`).
+If your entry point cannot be executed directly during the build, you can still pass discovery overrides manually:
 
----
+```typescript
+bffRollupPlugin({
+  entryPoint: resolve(__dirname, 'src/index.ts'),
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+  funcNameFromRelPath: myCustomNameGenerator,
+})
+```
 
-## How It Works
+These overrides are a fallback only. The preferred approach is keeping the discovery config in the entry point and letting the plugin load it automatically.
 
-1. At build start, the plugin calls `exportFunctions({ exportPathMode: true })` to discover function file paths using BFF's glob logic — without loading any modules.
-2. It calls `this.emitFile({ type: 'chunk', id: path, name: funcName })` for each discovered function, injecting them as additional Rollup entry points.
-3. Rollup bundles each function independently, applying tree shaking across each chunk.
-4. `bffRollupOutput` routes the output to the correct nested directory structure.
-5. At runtime, the BFF cold-start optimization still applies — only the matching module is loaded from the pre-bundled output.
+## Notes
 
----
-
-## Requirements
-
-- Node.js ≥ 18
-- Rollup ≥ 3.0.0 (peer dependency)
-- `better-firebase-functions` (installed automatically as a dependency)
+- Your `searchGlob` should describe runtime files, usually compiled `.js` files.
+- During build-discovery, BFF automatically expands `.js` / `.cjs` / `.mjs` globs to match source `.ts` / `.cts` / `.mts` files too.
+- Output filenames now mirror the runtime BFF layout instead of being reconstructed from dash-separated function names.

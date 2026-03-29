@@ -1,154 +1,150 @@
 # better-firebase-functions-esbuild
 
-**esbuild plugin and build helper for optimized Firebase Cloud Functions.**
+esbuild helper/plugin for `better-firebase-functions`.
 
-[![npm](https://img.shields.io/npm/v/better-firebase-functions-esbuild)](https://www.npmjs.com/package/better-firebase-functions-esbuild)
+This package discovers your Firebase function files using the same config already present in your BFF entry point, then builds one bundled output file per function.
 
-Part of the [`better-firebase-functions`](https://github.com/george43g/better-firebase-functions) monorepo.
-
----
-
-## Why?
-
-The core `better-firebase-functions` library reduces cold-start time by only loading the one function module that matches the running instance at runtime. This is already a significant improvement.
-
-The bundler plugins take this further: instead of one large bundle containing all your functions' code, each function gets its own **independently bundled, tree-shaken file**. On cold start, Node.js only has to parse and execute a small, tight bundle with exactly the code that function needs — no dead code, no shared initialization from unrelated functions.
-
----
-
-## Installation
+## Install
 
 ```sh
-npm install --save-dev better-firebase-functions-esbuild esbuild
+npm install -D better-firebase-functions-esbuild esbuild
 ```
 
----
+## How discovery works
 
-## Usage
+The plugin executes your entry point in a special BFF build-discovery mode. That means it reuses the exact runtime config already passed to `exportFunctions()` or `exportFunctionsAsync()`:
 
-### Option A: `buildFunctions()` (recommended)
+- `functionDirectoryPath`
+- `searchGlob`
+- `funcNameFromRelPath`
+- `__dirname`
 
-The simplest integration. Call it from a build script and it handles everything.
+In the common case you only provide `entryPoint` to the build helper. No duplicated glob config is required.
+
+## Recommended usage: `buildFunctions()`
+
+Keep your runtime config in the entry point:
 
 ```typescript
-// scripts/build.ts
+// src/index.ts
+import { exportFunctions } from 'better-firebase-functions';
+
+exportFunctions({
+  __filename,
+  exports,
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+});
+```
+
+Then build with esbuild:
+
+```typescript
 import { buildFunctions } from 'better-firebase-functions-esbuild';
 import { resolve } from 'path';
 
 await buildFunctions({
-  entryPoint: resolve(__dirname, '../src/index.ts'),
-  functionDirectoryPath: './functions',
-  searchGlob: '**/*.func.ts',
-  outdir: resolve(__dirname, '../dist'),
+  entryPoint: resolve(__dirname, 'src/index.ts'),
+  outdir: resolve(__dirname, 'dist'),
   target: 'node20',
   verbose: true,
 });
 ```
 
-This produces one output file per function in `dist/`, plus a `dist/main.js` for the entry point. Each function file is independently bundled with tree shaking.
+### Output layout
 
-**Output layout:**
+If the source trigger is:
 
-```
-dist/
-  main.js           ← entry point (loads BFF, discovers functions at runtime)
-  auth/
-    onCreate.js     ← auth-onCreate function, independently bundled
-  http/
-    getUser.js      ← http-getUser function, independently bundled
+```text
+src/functions/auth/on-create.func.ts
 ```
 
-### Option B: `discoverFunctionEntryPoints()` + manual esbuild call
+...the bundled output will be:
 
-For full control over the esbuild configuration:
+```text
+dist/main.js
+dist/functions/auth/on-create.func.js
+```
+
+The runtime layout is preserved, so `main.js` can keep using the same `functionDirectoryPath` and `searchGlob` you configured in the entry point.
+
+## Manual discovery helpers
+
+### `discoverFunctionEntryPoints()`
+
+Returns a runtime-oriented map of `{ functionName: absoluteSourcePath }`.
 
 ```typescript
-import { build } from 'esbuild';
 import { discoverFunctionEntryPoints } from 'better-firebase-functions-esbuild';
-import { resolve } from 'path';
 
-const entryPoint = resolve(__dirname, 'src/index.ts');
+const entryPoints = await discoverFunctionEntryPoints({
+  entryPoint: resolve(__dirname, 'src/index.ts'),
+});
+```
 
-const functionEntries = discoverFunctionEntryPoints({
-  entryPoint,
-  functionDirectoryPath: './functions',
-  searchGlob: '**/*.func.ts',
+### `discoverBuildEntryPoints()`
+
+Returns build-ready esbuild entry points whose output paths already mirror the runtime BFF layout.
+
+```typescript
+import { discoverBuildEntryPoints } from 'better-firebase-functions-esbuild';
+
+const { entryPoints, discovery } = await discoverBuildEntryPoints({
+  entryPoint: resolve(__dirname, 'src/index.ts'),
 });
 
-await build({
+await esbuild.build({
   entryPoints: {
-    main: entryPoint,
-    ...functionEntries,
+    main: resolve(__dirname, 'src/index.ts'),
+    ...entryPoints,
   },
   outdir: 'dist',
   bundle: true,
   platform: 'node',
   format: 'cjs',
-  target: 'node20',
-  treeShaking: true,
-  external: ['firebase-admin', 'firebase-functions'],
-  // ... any other esbuild options
 });
 ```
 
-### Option C: `bffEsbuildPlugin()` (informational only)
+## Logging plugin: `bffEsbuildPlugin()`
 
-The plugin logs discovered entry points during an esbuild build. Note: esbuild's plugin API does not support dynamically adding entry points, so this is for monitoring/logging purposes only. Use `discoverFunctionEntryPoints()` to set up entry points, then add the plugin for visibility.
+esbuild's plugin API cannot add entry points dynamically, so the plugin only logs discovery information. Use `buildFunctions()` for actual per-function bundling.
 
 ```typescript
 import { build } from 'esbuild';
-import { discoverFunctionEntryPoints, bffEsbuildPlugin } from 'better-firebase-functions-esbuild';
-
-const entryPoints = discoverFunctionEntryPoints({ entryPoint: 'src/index.ts' });
+import { bffEsbuildPlugin } from 'better-firebase-functions-esbuild';
 
 await build({
-  entryPoints: { main: 'src/index.ts', ...entryPoints },
+  entryPoints: { main: 'src/index.ts' },
   outdir: 'dist',
   bundle: true,
   platform: 'node',
-  plugins: [bffEsbuildPlugin({ entryPoint: 'src/index.ts', verbose: true })],
+  plugins: [
+    bffEsbuildPlugin({
+      entryPoint: resolve(__dirname, 'src/index.ts'),
+      verbose: true,
+    }),
+  ],
 });
 ```
 
----
+## Fallback manual overrides
 
-## API
+If your entry point cannot be executed directly during the build, you can still pass discovery overrides manually:
 
-### `buildFunctions(options)`
+```typescript
+await buildFunctions({
+  entryPoint: resolve(__dirname, 'src/index.ts'),
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+  funcNameFromRelPath: myCustomNameGenerator,
+  outdir: 'dist',
+});
+```
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `entryPoint` | `string` | — | **Required.** Absolute path to your entry point (`index.ts`) |
-| `outdir` | `string` | — | **Required.** Output directory |
-| `functionDirectoryPath` | `string` | `'./'` | Relative path from entry point to functions directory |
-| `searchGlob` | `string` | `'**/*.{js,ts}'` | Glob pattern for function files |
-| `funcNameFromRelPath` | `function` | built-in | Custom function name generator |
-| `external` | `boolean \| string[]` | `true` | Dependencies to externalize. `true` reads from `package.json` |
-| `target` | `string` | `'node18'` | esbuild Node.js target |
-| `verbose` | `boolean` | `false` | Log discovered entry points |
-| `esbuildOptions` | `Partial<BuildOptions>` | `{}` | Additional esbuild options (merged) |
+These overrides are a fallback only. The preferred approach is keeping the discovery config in the entry point and letting the plugin load it automatically.
 
-### `discoverFunctionEntryPoints(options)`
+## Notes
 
-Returns `Record<string, string>` — a map of `{ functionName: absoluteFilePath }`.
-
-### `bffEsbuildPlugin(options)`
-
-Returns an esbuild `Plugin` for logging. See Option C above.
-
----
-
-## How It Works
-
-1. At build time, `discoverFunctionEntryPoints()` calls `exportFunctions({ exportPathMode: true })` which runs the BFF glob discovery logic but returns **file paths** instead of loading modules.
-2. Those paths are passed to esbuild as individual entry points.
-3. esbuild bundles each function file independently, applying tree shaking.
-4. At runtime, the BFF cold-start optimization still applies — only the matching module is loaded. Because each module is now its own small bundle, startup is even faster.
-
----
-
-## Requirements
-
-- Node.js ≥ 18
-- esbuild ≥ 0.17.0 (peer dependency)
-- `better-firebase-functions` (installed automatically as a dependency)
+- Your `searchGlob` should describe runtime files, usually compiled `.js` files.
+- During build-discovery, BFF automatically expands `.js` / `.cjs` / `.mjs` globs to match source `.ts` / `.cts` / `.mts` files too.
+- If you use a custom `funcNameFromRelPath`, esbuild discovery reuses it automatically because it is loaded from the entry point itself.

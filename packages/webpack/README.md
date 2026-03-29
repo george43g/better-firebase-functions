@@ -1,33 +1,45 @@
 # better-firebase-functions-webpack
 
-**webpack plugin for optimized Firebase Cloud Functions builds.**
+webpack plugin for `better-firebase-functions`.
 
-[![npm](https://img.shields.io/npm/v/better-firebase-functions-webpack)](https://www.npmjs.com/package/better-firebase-functions-webpack)
+This plugin discovers your Firebase function files using the same config already present in your BFF entry point, then adds one bundled output entry per function.
 
-Part of the [`better-firebase-functions`](https://github.com/george43g/better-firebase-functions) monorepo.
-
----
-
-## Why?
-
-The core `better-firebase-functions` library reduces cold-start time by only loading the one function module that matches the running instance at runtime. The webpack plugin takes this further: each function gets its own **independently bundled, tree-shaken output file**. On cold start, Node.js parses only a small, tight bundle with exactly the code that function needs.
-
----
-
-## Installation
+## Install
 
 ```sh
-npm install --save-dev better-firebase-functions-webpack webpack
+npm install -D better-firebase-functions-webpack webpack
 ```
 
----
+## How discovery works
+
+The plugin executes your entry point in a special BFF build-discovery mode. That means it reuses the exact runtime config already passed to `exportFunctions()` or `exportFunctionsAsync()`:
+
+- `functionDirectoryPath`
+- `searchGlob`
+- `funcNameFromRelPath`
+- `__dirname`
+
+In the common case you only provide `entryPoint` to the plugin. No duplicated glob config is required.
 
 ## Usage
 
-Add `BffWebpackPlugin` to your webpack config. The plugin automatically discovers your function files and configures webpack to build each one as a separate entry point.
+Keep your runtime config in the entry point:
 
 ```typescript
-// webpack.config.ts
+// src/index.ts
+import { exportFunctions } from 'better-firebase-functions';
+
+exportFunctions({
+  __filename,
+  exports,
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+});
+```
+
+Then configure webpack:
+
+```typescript
 import { resolve } from 'path';
 import { BffWebpackPlugin } from 'better-firebase-functions-webpack';
 
@@ -39,69 +51,58 @@ export default {
     path: resolve(__dirname, 'dist'),
     libraryTarget: 'commonjs2',
   },
-  resolve: {
-    extensions: ['.ts', '.js'],
-  },
-  module: {
-    rules: [
-      {
-        test: /\.ts$/,
-        use: 'ts-loader',
-        exclude: /node_modules/,
-      },
-    ],
-  },
   plugins: [
     new BffWebpackPlugin({
       entryPoint: resolve(__dirname, 'src/index.ts'),
-      functionDirectoryPath: './functions',
-      searchGlob: '**/*.func.ts',
       verbose: true,
     }),
   ],
 };
 ```
 
-**Output layout:**
+## Output layout
 
-```
-dist/
-  main.js            ← entry point (per outputFileName option)
-  auth/
-    onCreate.js      ← auth-onCreate function, independently bundled
-  http/
-    getUser.js       ← http-getUser function, independently bundled
+If the source trigger is:
+
+```text
+src/functions/auth/on-create.func.ts
 ```
 
----
+...the bundled output will be:
 
-## API
+```text
+dist/main.js
+dist/functions/auth/on-create.func.js
+```
 
-### `new BffWebpackPlugin(options)`
+The runtime layout is preserved, so `main.js` can keep using the same `functionDirectoryPath` and `searchGlob` you configured in the entry point.
 
-| Option | Type | Default | Description |
-|---|---|---|---|
-| `entryPoint` | `string` | — | **Required.** Absolute path to your entry point (`index.ts`) |
-| `functionDirectoryPath` | `string` | `'./'` | Relative path from entry point to functions directory |
-| `searchGlob` | `string` | `'**/*.{js,ts}'` | Glob pattern for function files |
-| `funcNameFromRelPath` | `function` | built-in | Custom function name generator |
-| `outputFileName` | `string` | `'main.js'` | Output filename for the main entry point |
-| `verbose` | `boolean` | `false` | Log discovered entry points |
+## Plugin options
 
----
+| Option | Description |
+|---|---|
+| `entryPoint` | Required entry point path used for build-discovery |
+| `outputFileName` | Output filename for the main entry point. Default: `main.js` |
+| `verbose` | Logs discovered functions and output paths |
+| `__dirname` / `functionDirectoryPath` / `searchGlob` / `funcNameFromRelPath` | Fallback manual discovery overrides |
 
-## How It Works
+## Fallback manual overrides
 
-1. At build time, the plugin calls `exportFunctions({ exportPathMode: true })` to discover function file paths using BFF's glob logic — without loading any modules.
-2. It hooks into webpack's `environment` phase to inject those paths as additional entry points.
-3. It configures webpack's `output.filename` to route function entries into the correct directory paths (dash-separated names → nested directories).
-4. webpack bundles each function independently with tree shaking.
-5. At runtime, the BFF cold-start optimization still applies — only the matching module is loaded from the pre-bundled output.
+If your entry point cannot be executed directly during the build, you can still pass discovery overrides manually:
 
----
+```typescript
+new BffWebpackPlugin({
+  entryPoint: resolve(__dirname, 'src/index.ts'),
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+  funcNameFromRelPath: myCustomNameGenerator,
+})
+```
 
-## Requirements
+These overrides are a fallback only. The preferred approach is keeping the discovery config in the entry point and letting the plugin load it automatically.
 
-- Node.js ≥ 18
-- webpack ≥ 5.0.0 (peer dependency)
-- `better-firebase-functions` (installed automatically as a dependency)
+## Notes
+
+- Your `searchGlob` should describe runtime files, usually compiled `.js` files.
+- During build-discovery, BFF automatically expands `.js` / `.cjs` / `.mjs` globs to match source `.ts` / `.cts` / `.mts` files too.
+- Output filenames now mirror the runtime BFF layout instead of being reconstructed from dash-separated function names.

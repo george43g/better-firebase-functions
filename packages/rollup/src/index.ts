@@ -1,32 +1,38 @@
-import { resolve, sep } from 'path';
-import type { Plugin, OutputOptions } from 'rollup';
-import { exportFunctions } from 'better-firebase-functions';
+import { sep } from "path";
+import type { Plugin, OutputOptions } from "rollup";
+import {
+  BFF_BUILD_DISCOVERY_ENV_VAR,
+  BFF_DISCOVERY_EXPORT_KEY,
+  consumeBuildDiscovery,
+  discoverFunctionPaths,
+  type BffBuildDiscovery,
+  type DiscoverFunctionPathsConfig,
+} from "better-firebase-functions";
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-export interface BffRollupPluginOptions {
+type DiscoveryOverrideOptions = Partial<
+  Pick<
+    DiscoverFunctionPathsConfig,
+    "__dirname" | "functionDirectoryPath" | "searchGlob" | "funcNameFromRelPath"
+  >
+>;
+
+export interface BffRollupPluginOptions extends DiscoveryOverrideOptions {
   /**
    * Absolute path to the entry point file (index.ts/main.ts).
+   * The plugin executes this file in BFF build-discovery mode so it can reuse
+   * the exact `exportFunctions()` config already present in your entry point.
    */
   entryPoint: string;
 
   /**
-   * Relative path from the entry point directory to the functions directory.
-   * @default './'
+   * Fallback discovery root override for projects where the entry point cannot
+   * be executed directly at build time.
    */
-  functionDirectoryPath?: string;
-
-  /**
-   * Glob pattern for matching function files.
-   */
-  searchGlob?: string;
-
-  /**
-   * Custom function name generator.
-   */
-  funcNameFromRelPath?: (relativePath: string) => string;
+  __dirname?: string;
 
   /**
    * Enable verbose logging.
@@ -36,47 +42,109 @@ export interface BffRollupPluginOptions {
 }
 
 // ---------------------------------------------------------------------------
-// Discovery helper (same logic as esbuild/webpack plugins)
+// Shared discovery logic
 // ---------------------------------------------------------------------------
 
-function discoverEntryPoints(options: BffRollupPluginOptions): Record<string, string> {
-  const {
-    entryPoint,
-    functionDirectoryPath = './',
-    searchGlob,
-    funcNameFromRelPath,
-    verbose = false,
-  } = options;
+function toPosixPath(filePath: string): string {
+  return filePath.split(sep).join("/");
+}
 
-  const entryDir = entryPoint.split(sep).slice(0, -1).join(sep);
-  const rootDir = resolve(entryDir, functionDirectoryPath);
+function hasManualDiscoveryOverrides(
+  options: DiscoveryOverrideOptions,
+): boolean {
+  return Boolean(
+    options.__dirname ||
+    options.functionDirectoryPath ||
+    options.searchGlob ||
+    options.funcNameFromRelPath,
+  );
+}
 
-  const exportsObj = exportFunctions({
-    __filename: entryPoint,
-    exports: {},
-    functionDirectoryPath,
-    searchGlob,
-    funcNameFromRelPath,
-    exportPathMode: true,
-    enableLogger: verbose,
+function buildManualDiscovery(
+  options: BffRollupPluginOptions,
+): BffBuildDiscovery {
+  return discoverFunctionPaths({
+    __filename: options.entryPoint,
+    __dirname: options.__dirname,
+    functionDirectoryPath: options.functionDirectoryPath,
+    searchGlob: options.searchGlob,
+    funcNameFromRelPath: options.funcNameFromRelPath,
+    enableLogger: options.verbose,
   });
+}
 
-  const entries: Record<string, string> = {};
+async function loadDiscoveryFromEntrypoint(
+  entryPoint: string,
+): Promise<BffBuildDiscovery> {
+  const previousValue = process.env[BFF_BUILD_DISCOVERY_ENV_VAR];
+  process.env[BFF_BUILD_DISCOVERY_ENV_VAR] = "1";
 
-  function flatten(obj: Record<string, any>, prefix: string[] = []) {
-    for (const key of Object.keys(obj)) {
-      if (typeof obj[key] === 'string') {
-        const relPath = obj[key] as string;
-        const funcName = prefix.length > 0 ? [...prefix, key].join('-') : key;
-        entries[funcName] = resolve(rootDir, relPath);
-      } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-        flatten(obj[key] as Record<string, any>, [...prefix, key]);
+  try {
+    try {
+      const tsx = eval("require")("tsx/cjs/api") as {
+        require: (request: string, parent: string) => any;
+      };
+      const loaded = tsx.require(entryPoint, __filename);
+      const discovery =
+        consumeBuildDiscovery(entryPoint) ??
+        loaded?.[BFF_DISCOVERY_EXPORT_KEY] ??
+        loaded?.default?.[BFF_DISCOVERY_EXPORT_KEY] ??
+        loaded?.["module.exports"]?.[BFF_DISCOVERY_EXPORT_KEY];
+
+      if (
+        discovery &&
+        typeof discovery === "object" &&
+        "entries" in discovery
+      ) {
+        return discovery as BffBuildDiscovery;
       }
+    } catch {
+      // Fall through to ESM import mode below.
     }
-  }
 
-  flatten(exportsObj);
-  return entries;
+    const { tsImport } = await import("tsx/esm/api");
+    const loaded = await tsImport(entryPoint, __filename);
+    const discovery =
+      consumeBuildDiscovery(entryPoint) ??
+      loaded?.[BFF_DISCOVERY_EXPORT_KEY] ??
+      loaded?.default?.[BFF_DISCOVERY_EXPORT_KEY] ??
+      loaded?.["module.exports"]?.[BFF_DISCOVERY_EXPORT_KEY];
+
+    if (
+      !discovery ||
+      typeof discovery !== "object" ||
+      !("entries" in discovery)
+    ) {
+      throw new Error(
+        `Entrypoint '${entryPoint}' did not expose ${BFF_DISCOVERY_EXPORT_KEY}. ` +
+          `Ensure it calls exportFunctions() or exportFunctionsAsync().`,
+      );
+    }
+
+    return discovery as BffBuildDiscovery;
+  } finally {
+    if (previousValue === undefined)
+      delete process.env[BFF_BUILD_DISCOVERY_ENV_VAR];
+    else process.env[BFF_BUILD_DISCOVERY_ENV_VAR] = previousValue;
+  }
+}
+
+async function getBuildDiscovery(
+  options: BffRollupPluginOptions,
+): Promise<BffBuildDiscovery> {
+  if (hasManualDiscoveryOverrides(options))
+    return buildManualDiscovery(options);
+
+  try {
+    return await loadDiscoveryFromEntrypoint(options.entryPoint);
+  } catch (error) {
+    throw new Error(
+      `[bff-rollup] Failed to load BFF discovery config from '${options.entryPoint}'. ` +
+        `If your entry point cannot be executed directly during the build, ` +
+        `pass functionDirectoryPath/searchGlob/funcNameFromRelPath manually. ` +
+        `Original error: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -87,48 +155,33 @@ function discoverEntryPoints(options: BffRollupPluginOptions): Record<string, st
  * Rollup plugin that discovers Firebase Cloud Function files and injects
  * them as additional entry points for per-function bundling.
  *
- * @example
- * // rollup.config.ts
- * import { bffRollupPlugin } from 'better-firebase-functions-rollup';
- * import { resolve } from 'path';
- *
- * export default {
- *   input: 'src/index.ts',
- *   output: {
- *     dir: 'dist',
- *     format: 'cjs',
- *     entryFileNames: (chunkInfo) => {
- *       if (chunkInfo.name === 'main') return 'main.js';
- *       return chunkInfo.name.split('-').join('/') + '.js';
- *     },
- *   },
- *   plugins: [
- *     bffRollupPlugin({
- *       entryPoint: resolve(__dirname, 'src/index.ts'),
- *       functionDirectoryPath: './functions',
- *     }),
- *   ],
- * };
+ * By default this reuses the exact runtime `exportFunctions()` config from your
+ * entry point, so you do not need to duplicate search globs or custom naming
+ * logic in rollup config.
  */
 export function bffRollupPlugin(options: BffRollupPluginOptions): Plugin {
-  let functionEntries: Record<string, string> = {};
-
   return {
-    name: 'better-firebase-functions',
+    name: "better-firebase-functions",
 
-    buildStart() {
-      functionEntries = discoverEntryPoints(options);
+    async buildStart() {
+      const discovery = await getBuildDiscovery(options);
 
       if (options.verbose) {
-        console.log(`[bff-rollup] Found ${Object.keys(functionEntries).length} function entry points`);
+        console.log(
+          `[bff-rollup] Found ${Object.keys(discovery.entries).length} function entry points`,
+        );
+        for (const [name, entry] of Object.entries(discovery.entries)) {
+          console.log(
+            `  ${name} -> ${entry.absPath} (out: ${entry.outputRelativePath})`,
+          );
+        }
       }
 
-      // Inject discovered entry points into the input configuration
-      for (const [name, path] of Object.entries(functionEntries)) {
+      for (const entry of Object.values(discovery.entries)) {
         this.emitFile({
-          type: 'chunk',
-          id: path,
-          name,
+          type: "chunk",
+          id: entry.absPath,
+          name: toPosixPath(entry.outputEntryName),
         });
       }
     },
@@ -138,30 +191,27 @@ export function bffRollupPlugin(options: BffRollupPluginOptions): Plugin {
 /**
  * Helper to generate the recommended Rollup output config for Firebase Functions.
  *
- * @example
- * import { bffRollupOutput } from 'better-firebase-functions-rollup';
- *
- * export default {
- *   output: bffRollupOutput({ dir: 'dist', mainFileName: 'main.js' }),
- * };
+ * Output paths now mirror your runtime BFF layout: the configured
+ * `functionDirectoryPath` is preserved and each bundled trigger keeps the same
+ * relative path it will have at runtime, with the extension converted to its
+ * compiled JavaScript form.
  */
 export function bffRollupOutput(options: {
   dir: string;
   mainFileName?: string;
-  format?: 'cjs' | 'esm';
+  format?: "cjs" | "esm";
 }): OutputOptions {
-  const { dir, mainFileName = 'main.js', format = 'cjs' } = options;
+  const { dir, mainFileName = "main.js", format = "cjs" } = options;
 
   return {
     dir,
     format,
     sourcemap: true,
     entryFileNames: (chunkInfo) => {
-      if (chunkInfo.name === 'main' || chunkInfo.name === 'index') {
+      if (chunkInfo.name === "main" || chunkInfo.name === "index") {
         return mainFileName;
       }
-      // Convert dash-separated function names to directory paths
-      return chunkInfo.name.split('-').join('/') + '.js';
+      return `${chunkInfo.name}.js`;
     },
   };
 }

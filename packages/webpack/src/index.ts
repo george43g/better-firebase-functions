@@ -1,33 +1,38 @@
-import { resolve, sep } from 'path';
-import type { Compiler, PathData, WebpackPluginInstance } from 'webpack';
-import { exportFunctions } from 'better-firebase-functions';
+import { sep } from "path";
+import type { Compiler, PathData, WebpackPluginInstance } from "webpack";
+import {
+  BFF_BUILD_DISCOVERY_ENV_VAR,
+  BFF_DISCOVERY_EXPORT_KEY,
+  consumeBuildDiscovery,
+  discoverFunctionPaths,
+  type BffBuildDiscovery,
+  type DiscoverFunctionPathsConfig,
+} from "better-firebase-functions";
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-export interface BffWebpackPluginOptions {
+type DiscoveryOverrideOptions = Partial<
+  Pick<
+    DiscoverFunctionPathsConfig,
+    "__dirname" | "functionDirectoryPath" | "searchGlob" | "funcNameFromRelPath"
+  >
+>;
+
+export interface BffWebpackPluginOptions extends DiscoveryOverrideOptions {
   /**
    * Absolute path to the entry point file (index.ts/main.ts).
+   * The plugin executes this file in BFF build-discovery mode so it can reuse
+   * the exact `exportFunctions()` config already present in your entry point.
    */
   entryPoint: string;
 
   /**
-   * Relative path from the entry point directory to the functions directory.
-   * @default './'
+   * Fallback discovery root override for projects where the entry point cannot
+   * be executed directly at build time.
    */
-  functionDirectoryPath?: string;
-
-  /**
-   * Glob pattern for matching function files.
-   * @default '** /*.{js,ts}' (without space)
-   */
-  searchGlob?: string;
-
-  /**
-   * Custom function name generator.
-   */
-  funcNameFromRelPath?: (relativePath: string) => string;
+  __dirname?: string;
 
   /**
    * The output filename for the main entry point.
@@ -43,6 +48,112 @@ export interface BffWebpackPluginOptions {
 }
 
 // ---------------------------------------------------------------------------
+// Shared discovery logic
+// ---------------------------------------------------------------------------
+
+function toPosixPath(filePath: string): string {
+  return filePath.split(sep).join("/");
+}
+
+function hasManualDiscoveryOverrides(
+  options: DiscoveryOverrideOptions,
+): boolean {
+  return Boolean(
+    options.__dirname ||
+    options.functionDirectoryPath ||
+    options.searchGlob ||
+    options.funcNameFromRelPath,
+  );
+}
+
+function buildManualDiscovery(
+  options: BffWebpackPluginOptions,
+): BffBuildDiscovery {
+  return discoverFunctionPaths({
+    __filename: options.entryPoint,
+    __dirname: options.__dirname,
+    functionDirectoryPath: options.functionDirectoryPath,
+    searchGlob: options.searchGlob,
+    funcNameFromRelPath: options.funcNameFromRelPath,
+    enableLogger: options.verbose,
+  });
+}
+
+async function loadDiscoveryFromEntrypoint(
+  entryPoint: string,
+): Promise<BffBuildDiscovery> {
+  const previousValue = process.env[BFF_BUILD_DISCOVERY_ENV_VAR];
+  process.env[BFF_BUILD_DISCOVERY_ENV_VAR] = "1";
+
+  try {
+    try {
+      const tsx = eval("require")("tsx/cjs/api") as {
+        require: (request: string, parent: string) => any;
+      };
+      const loaded = tsx.require(entryPoint, __filename);
+      const discovery =
+        consumeBuildDiscovery(entryPoint) ??
+        loaded?.[BFF_DISCOVERY_EXPORT_KEY] ??
+        loaded?.default?.[BFF_DISCOVERY_EXPORT_KEY] ??
+        loaded?.["module.exports"]?.[BFF_DISCOVERY_EXPORT_KEY];
+
+      if (
+        discovery &&
+        typeof discovery === "object" &&
+        "entries" in discovery
+      ) {
+        return discovery as BffBuildDiscovery;
+      }
+    } catch {
+      // Fall through to ESM import mode below.
+    }
+
+    const { tsImport } = await import("tsx/esm/api");
+    const loaded = await tsImport(entryPoint, __filename);
+    const discovery =
+      consumeBuildDiscovery(entryPoint) ??
+      loaded?.[BFF_DISCOVERY_EXPORT_KEY] ??
+      loaded?.default?.[BFF_DISCOVERY_EXPORT_KEY] ??
+      loaded?.["module.exports"]?.[BFF_DISCOVERY_EXPORT_KEY];
+
+    if (
+      !discovery ||
+      typeof discovery !== "object" ||
+      !("entries" in discovery)
+    ) {
+      throw new Error(
+        `Entrypoint '${entryPoint}' did not expose ${BFF_DISCOVERY_EXPORT_KEY}. ` +
+          `Ensure it calls exportFunctions() or exportFunctionsAsync().`,
+      );
+    }
+
+    return discovery as BffBuildDiscovery;
+  } finally {
+    if (previousValue === undefined)
+      delete process.env[BFF_BUILD_DISCOVERY_ENV_VAR];
+    else process.env[BFF_BUILD_DISCOVERY_ENV_VAR] = previousValue;
+  }
+}
+
+async function getBuildDiscovery(
+  options: BffWebpackPluginOptions,
+): Promise<BffBuildDiscovery> {
+  if (hasManualDiscoveryOverrides(options))
+    return buildManualDiscovery(options);
+
+  try {
+    return await loadDiscoveryFromEntrypoint(options.entryPoint);
+  } catch (error) {
+    throw new Error(
+      `[bff-webpack] Failed to load BFF discovery config from '${options.entryPoint}'. ` +
+        `If your entry point cannot be executed directly during the build, ` +
+        `pass functionDirectoryPath/searchGlob/funcNameFromRelPath manually. ` +
+        `Original error: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Webpack plugin
 // ---------------------------------------------------------------------------
 
@@ -50,22 +161,9 @@ export interface BffWebpackPluginOptions {
  * Webpack plugin that discovers Firebase Cloud Function files and configures
  * webpack to build each one as an independent entry point.
  *
- * Ported and modernized from the original migdev webpack config.
- *
- * @example
- * // webpack.config.ts
- * import { BffWebpackPlugin } from 'better-firebase-functions-webpack';
- *
- * export default {
- *   target: 'node',
- *   mode: 'production',
- *   plugins: [
- *     new BffWebpackPlugin({
- *       entryPoint: resolve(__dirname, 'src/index.ts'),
- *       functionDirectoryPath: './functions',
- *     }),
- *   ],
- * };
+ * By default this reuses the exact runtime `exportFunctions()` config from your
+ * entry point, so you do not need to duplicate search globs or custom naming
+ * logic in webpack config.
  */
 export class BffWebpackPlugin implements WebpackPluginInstance {
   private options: BffWebpackPluginOptions;
@@ -75,78 +173,57 @@ export class BffWebpackPlugin implements WebpackPluginInstance {
   }
 
   apply(compiler: Compiler): void {
-    const {
-      entryPoint,
-      functionDirectoryPath = './',
-      searchGlob,
-      funcNameFromRelPath,
-      outputFileName = 'main.js',
-      verbose = false,
-    } = this.options;
+    const { outputFileName = "main.js", verbose = false } = this.options;
 
-    const entryDir = entryPoint.split(sep).slice(0, -1).join(sep);
-    const rootDir = resolve(entryDir, functionDirectoryPath);
+    const baseEntry = compiler.options.entry;
 
-    // Discover function files using exportPathMode
-    const exportsObj = exportFunctions({
-      __filename: entryPoint,
-      exports: {},
-      functionDirectoryPath,
-      searchGlob,
-      funcNameFromRelPath,
-      exportPathMode: true,
-      enableLogger: verbose,
-    });
+    const applyDiscovery = async () => {
+      const discovery = await getBuildDiscovery(this.options);
+      const functionEntries = Object.fromEntries(
+        Object.values(discovery.entries).map((entry) => [
+          toPosixPath(entry.outputEntryName),
+          entry.absPath,
+        ]),
+      );
 
-    // Flatten to { funcName: absolutePath }
-    const functionEntries: Record<string, string> = {};
-
-    function flatten(obj: Record<string, any>, prefix: string[] = []) {
-      for (const key of Object.keys(obj)) {
-        if (typeof obj[key] === 'string') {
-          const relPath = obj[key] as string;
-          const funcName = prefix.length > 0 ? [...prefix, key].join('-') : key;
-          functionEntries[funcName] = resolve(rootDir, relPath);
-        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
-          flatten(obj[key] as Record<string, any>, [...prefix, key]);
+      if (verbose) {
+        console.log(
+          `[bff-webpack] Found ${Object.keys(discovery.entries).length} function entry points`,
+        );
+        for (const [name, entry] of Object.entries(discovery.entries)) {
+          console.log(
+            `  ${name} -> ${entry.absPath} (out: ${entry.outputRelativePath})`,
+          );
         }
       }
-    }
 
-    flatten(exportsObj);
-
-    if (verbose) {
-      console.log(`[bff-webpack] Found ${Object.keys(functionEntries).length} function entry points`);
-    }
-
-    // Hook into webpack compilation to add entry points and configure output
-    compiler.hooks.environment.tap('BffWebpackPlugin', () => {
-      const config = compiler.options;
-
-      // Add function entry points to the existing entry configuration
-      if (!config.entry || typeof config.entry === 'string' || Array.isArray(config.entry)) {
-        // Convert simple entry to object form
-        const existingEntry = config.entry;
-        config.entry = {
-          main: typeof existingEntry === 'string' ? existingEntry : (existingEntry as any),
+      if (
+        !baseEntry ||
+        typeof baseEntry === "string" ||
+        Array.isArray(baseEntry)
+      ) {
+        compiler.options.entry = {
+          main: typeof baseEntry === "string" ? baseEntry : (baseEntry as any),
           ...functionEntries,
         };
-      } else if (typeof config.entry === 'object') {
-        Object.assign(config.entry as Record<string, any>, functionEntries);
+      } else if (typeof baseEntry === "object") {
+        compiler.options.entry = {
+          ...(baseEntry as Record<string, any>),
+          ...functionEntries,
+        };
       }
 
-      // Configure output filenames: main goes to outputFileName,
-      // function entries use their dash-name converted to path separators
-      const output = config.output ?? {};
+      const output = compiler.options.output ?? {};
       (output as any).filename = (pathData: PathData) => {
         const chunkName = pathData.chunk?.name;
-        if (chunkName === 'main') return outputFileName;
-        if (chunkName) {
-          return `${chunkName.split('-').join(sep)}.js`;
-        }
-        return '[name].js';
+        if (chunkName === "main") return outputFileName;
+        if (chunkName) return `${chunkName}.js`;
+        return "[name].js";
       };
-      config.output = output;
-    });
+      compiler.options.output = output;
+    };
+
+    compiler.hooks.beforeRun.tapPromise("BffWebpackPlugin", applyDiscovery);
+    compiler.hooks.watchRun.tapPromise("BffWebpackPlugin", applyDiscovery);
   }
 }
