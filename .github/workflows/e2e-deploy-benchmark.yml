@@ -1,6 +1,10 @@
 name: E2E Deploy & Benchmark
 
 on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
     inputs:
       project_id:

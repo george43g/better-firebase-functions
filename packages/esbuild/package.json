@@ -38,7 +38,7 @@
     "esbuild": ">=0.17.0"
   },
   "dependencies": {
-    "better-firebase-functions": "*",
+    "better-firebase-functions": "^7.0.0",
     "tsx": "^4.20.6"
   },
   "devDependencies": {
