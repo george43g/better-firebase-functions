@@ -16,7 +16,7 @@ The implementation was small — under 100 lines of TypeScript. The impact was l
 
 Since then, a lot has changed in the Firebase Functions world. Gen 2 arrived, built on Cloud Run. The Node.js ecosystem shifted toward ESM. Bundlers became standard tools in serverless workflows. And the original package needed to keep up.
 
-This is the story of v7: a ground-up rewrite, a new family of bundler plugins, and — for the first time — real cold-start numbers measured against a live Firebase project.
+This is the story of v7: a ground-up rewrite, a new family of bundler plugins, a design breakthrough that eliminates an entire class of configuration bugs, and — for the first time — real cold-start numbers measured against a live Firebase project.
 
 ---
 
@@ -109,68 +109,118 @@ With a bundler, you flip the problem. Instead of one entry point that dynamicall
 
 At cold start, the runtime loads one small, tight file. No dynamic resolution, no redundant code paths, no shared initialization from unrelated functions.
 
-### How the plugins work
+### The configuration consistency problem
 
-All three plugins (esbuild, webpack, Rollup) share the same discovery mechanism: `exportFunctions({ exportPathMode: true })`.
+Before explaining how the plugins work, it's worth explaining a problem they needed to solve.
 
-This is a flag in the core library that runs the full glob discovery — the same logic used at runtime — but instead of loading modules, it returns a `{ functionName: absoluteFilePath }` map:
+`better-firebase-functions` is highly configurable at runtime. You can pass a custom glob pattern, a custom function name generator, a custom base directory. That's deliberate — every project has a slightly different layout.
+
+The original bundler plugin design accepted those same configuration options separately. But that meant two copies of the same config: one in your entry point for runtime, one in your webpack/esbuild/rollup config for build time. Any drift between the two would cause the build to bundle different files than the runtime would load — a silent, hard-to-debug mismatch.
+
+### The breakthrough: the entry point is the single source of truth
+
+The v7 bundler plugins take a different approach entirely. Instead of accepting duplicate config, they execute your BFF entry point directly — with a special environment variable set (`BFF_BUILD_DISCOVERY=1`) that tells BFF to run its discovery logic but skip loading any trigger modules.
+
+Because the plugins execute the real entry point, they use the exact same configuration you already wrote for runtime. `functionDirectoryPath`, `searchGlob`, `funcNameFromRelPath` — all of it, by construction, without any duplication.
+
+The mechanism:
+
+1. Plugin sets `BFF_BUILD_DISCOVERY=1` and requires your entry point via `tsx` (which handles TypeScript transparently)
+2. BFF detects the env var, runs glob + name derivation, but loads zero trigger modules
+3. BFF stores the discovery result in a global registry keyed by the entry point path
+4. Plugin reads the registry and gets a typed discovery map
+
+The result is a `BffBuildDiscovery` object:
 
 ```typescript
 {
-  'auth-onCreate': '/project/src/functions/auth/on-create.func.ts',
-  'auth-onDelete': '/project/src/functions/auth/on-delete.func.ts',
-  'email-sendWelcome': '/project/src/functions/email/send-welcome.func.ts',
-  // ...
+  functionDirectoryPath: 'functions',
+  entries: {
+    'auth-onCreate': {
+      absPath: '/project/src/functions/auth/on-create.func.ts',
+      sourceRelativePath: 'auth/on-create.func.ts',
+      runtimeRelativePath: 'auth/on-create.func.js',
+      outputRelativePath: 'functions/auth/on-create.func.js',
+      outputEntryName: 'functions/auth/on-create.func',
+    },
+    // ...
+  }
 }
 ```
 
-The plugins pass this map to the bundler as the set of entry points. Each bundler then produces independent output files, one per function, with tree shaking applied.
+Notice the distinction between `sourceRelativePath` (the `.ts` file that exists now) and `runtimeRelativePath` (the `.js` file that will exist after compilation). This is how the glob expansion works: if your runtime glob is `**/*.func.js`, BFF automatically expands it to `**/*.func.{js,ts}` during build discovery so it finds your TypeScript source files. The runtime path is still `.js`.
+
+Each plugin then passes these absolute source paths to the bundler as independent entry points. Each bundler produces one output file per function, with tree shaking applied.
+
+### The output layout matches the runtime layout
+
+Before this design, the plugins reconstructed output paths from dash-separated function names. `auth-onCreate` became `auth/onCreate.js` by splitting on dashes. This worked for the default naming convention but broke silently if you used a custom `funcNameFromRelPath`.
+
+Now the output layout mirrors the source layout directly, preserving `functionDirectoryPath`:
 
 ```
-Before (no bundler):    After (with bundler):
-dist/
-  index.js             dist/
-  functions/             main.js              ← thin entry point
-    auth/                auth/
-      on-create.js         onCreate.js        ← only auth SDK + on-create logic
-      on-delete.js         onDelete.js        ← only auth SDK + on-delete logic
-    email/               email/
-      send-welcome.js      sendWelcome.js     ← only nodemailer/email SDK
+src/functions/auth/on-create.func.ts  →  dist/functions/auth/on-create.func.js
+src/functions/http/get-user.func.ts   →  dist/functions/http/get-user.func.js
 ```
 
-The key insight: the discovery logic is written once, in the core library, and reused by every bundler plugin. There's no duplication, no configuration drift.
+This means the runtime `main.js` can keep using the exact same `functionDirectoryPath` and `searchGlob` you configured in the entry point. The layout is consistent from source to build to deploy.
 
-### esbuild: `buildFunctions()`
+### Using the plugins
 
-esbuild is the simplest integration. One call, handles everything:
+The entry point is where all config lives:
 
 ```typescript
+// src/index.ts — runtime config (the only place you configure BFF)
+import { exportFunctions } from 'better-firebase-functions';
+
+exportFunctions({
+  __filename,
+  exports,
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+});
+```
+
+The bundler config just needs the entry point path:
+
+```typescript
+// esbuild build script
 import { buildFunctions } from 'better-firebase-functions-esbuild';
 
 await buildFunctions({
   entryPoint: resolve(__dirname, 'src/index.ts'),
   outdir: 'dist',
   target: 'node20',
-  // external: true  ← auto-reads from package.json
 });
 ```
 
-esbuild's plugin API doesn't support adding entry points dynamically, so the package exposes `discoverFunctionEntryPoints()` for manual integration and a `bffEsbuildPlugin()` for logging/visibility.
-
-### webpack: `BffWebpackPlugin`
-
-The webpack plugin hooks into the `environment` phase to inject discovered entry points before compilation starts. It also configures `output.filename` to route dash-separated function names (e.g. `auth-onCreate`) to the correct directory structure (`auth/onCreate.js`):
-
 ```typescript
-new BffWebpackPlugin({
-  entryPoint: resolve(__dirname, 'src/index.ts'),
-  functionDirectoryPath: './functions',
-})
+// webpack.config.ts
+import { BffWebpackPlugin } from 'better-firebase-functions-webpack';
+
+export default {
+  target: 'node',
+  entry: 'src/index.ts',
+  plugins: [
+    new BffWebpackPlugin({
+      entryPoint: resolve(__dirname, 'src/index.ts'),
+    }),
+  ],
+};
 ```
 
-### Rollup: `bffRollupPlugin` + `bffRollupOutput`
+```typescript
+// rollup.config.ts
+import { bffRollupPlugin, bffRollupOutput } from 'better-firebase-functions-rollup';
 
-Rollup's plugin API supports dynamic chunk emission via `this.emitFile()`. The plugin calls `emitFile({ type: 'chunk', id: path, name: funcName })` for each discovered function at `buildStart`. A companion `bffRollupOutput()` helper configures the output filename routing.
+export default {
+  input: 'src/index.ts',
+  output: bffRollupOutput({ dir: 'dist' }),
+  plugins: [bffRollupPlugin({ entryPoint: resolve(__dirname, 'src/index.ts') })],
+};
+```
+
+If you ever need a custom `funcNameFromRelPath` or a non-standard `searchGlob`, you only write it once, in the entry point. The bundler inherits it automatically.
 
 ---
 
@@ -209,6 +259,8 @@ The script:
 4. Invokes cold (first hit) then warm (immediate second hit) for each function
 5. Fetches Firebase function logs and filters for benchmark markers
 6. Parses the JSON response bodies and prints a comparison table
+
+This is also wired into a GitHub Actions workflow (`e2e-deploy-benchmark.yml`) that can be triggered manually — giving you reproducible benchmarks from CI with artifact upload.
 
 ### The results
 
@@ -265,9 +317,9 @@ Some directions worth exploring:
 
 **Bundler plugin benchmarks.** We benchmarked the core runtime optimization. The next logical step is benchmarking the bundler plugins against the runtime-only approach — measuring whether per-function bundling with tree shaking produces meaningfully faster cold starts in a large project.
 
-**ESM-native support.** Firebase Functions now supports ESM entry points. `exportFunctionsAsync()` is the first step, but the bundler plugins haven't been benchmarked against ESM output yet.
+**ESM-native support.** Firebase Functions now supports ESM entry points. `exportFunctionsAsync()` is the first step, and the build-discovery mechanism works for async entry points too. Full ESM benchmarking against Gen 2 is a natural follow-up.
 
-**The build-once deploy-many pattern.** The bundler plugins enable an interesting architecture: you can run the glob discovery and bundling as a CI step, cache the output, and deploy only changed functions using Firebase's codebase feature. This is a natural next post.
+**The build-once deploy-many pattern.** The bundler plugins enable an interesting architecture: you can run glob discovery and bundling as a CI step, cache the output, and deploy only changed functions using Firebase's codebase feature. This is a natural next post.
 
 `[AUTHOR PROMPT]`
 > **Is there anything about the Gen 2 / Cloud Run architecture that you think developers are getting wrong or underestimating? Any gotchas that burned you during this work that others should know about?**

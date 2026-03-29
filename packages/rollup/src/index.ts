@@ -177,11 +177,15 @@ export function bffRollupPlugin(options: BffRollupPluginOptions): Plugin {
         }
       }
 
+      // Emit each function as an independent chunk with a stable name.
+      // preserveSignature: "exports-only" tells rollup to keep the entry chunk
+      // and not merge it into a shared chunk with a hash-suffixed filename.
       for (const entry of Object.values(discovery.entries)) {
         this.emitFile({
           type: "chunk",
           id: entry.absPath,
           name: toPosixPath(entry.outputEntryName),
+          preserveSignature: "exports-only",
         });
       }
     },
@@ -213,5 +217,9 @@ export function bffRollupOutput(options: {
       }
       return `${chunkInfo.name}.js`;
     },
+    // Use deterministic names for all chunks. BFF emits each trigger as its own
+    // entry with `preserveSignature: "exports-only"` so there are no ambiguous
+    // shared chunks — each trigger's code stays in its own named file.
+    chunkFileNames: "[name].js",
   };
 }

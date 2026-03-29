@@ -1,5 +1,5 @@
 import { sep } from "path";
-import type { Compiler, PathData, WebpackPluginInstance } from "webpack";
+import type { Compiler, WebpackPluginInstance } from "webpack";
 import {
   BFF_BUILD_DISCOVERY_ENV_VAR,
   BFF_DISCOVERY_EXPORT_KEY,
@@ -174,17 +174,22 @@ export class BffWebpackPlugin implements WebpackPluginInstance {
 
   apply(compiler: Compiler): void {
     const { outputFileName = "main.js", verbose = false } = this.options;
+    const pluginOptions = this.options;
 
-    const baseEntry = compiler.options.entry;
+    // Wire up output filename routing up-front (synchronous — safe to do here).
+    // main → outputFileName, triggers → their outputEntryName path.
+    const output = compiler.options.output ?? {};
+    (output as any).filename = (pathData: any) => {
+      const chunkName: string = pathData.chunk?.name ?? "[name]";
+      if (chunkName === "main") return outputFileName;
+      return `${chunkName}.js`;
+    };
+    compiler.options.output = output;
 
-    const applyDiscovery = async () => {
-      const discovery = await getBuildDiscovery(this.options);
-      const functionEntries = Object.fromEntries(
-        Object.values(discovery.entries).map((entry) => [
-          toPosixPath(entry.outputEntryName),
-          entry.absPath,
-        ]),
-      );
+    // Use webpack's EntryPlugin to add each trigger as an independent entry.
+    // This must happen in apply() (before run) so webpack normalises all entries together.
+    compiler.hooks.beforeRun.tapPromise("BffWebpackPlugin", async () => {
+      const discovery = await getBuildDiscovery(pluginOptions);
 
       if (verbose) {
         console.log(
@@ -197,33 +202,14 @@ export class BffWebpackPlugin implements WebpackPluginInstance {
         }
       }
 
-      if (
-        !baseEntry ||
-        typeof baseEntry === "string" ||
-        Array.isArray(baseEntry)
-      ) {
-        compiler.options.entry = {
-          main: typeof baseEntry === "string" ? baseEntry : (baseEntry as any),
-          ...functionEntries,
-        };
-      } else if (typeof baseEntry === "object") {
-        compiler.options.entry = {
-          ...(baseEntry as Record<string, any>),
-          ...functionEntries,
-        };
+      // Dynamically import EntryPlugin to avoid a static webpack peer dep at module load time.
+      // eslint-disable-next-line no-eval
+      const { EntryPlugin } = eval("require")("webpack") as typeof import("webpack");
+
+      for (const entry of Object.values(discovery.entries)) {
+        const chunkName = toPosixPath(entry.outputEntryName);
+        new EntryPlugin(compiler.context, entry.absPath, { name: chunkName }).apply(compiler);
       }
-
-      const output = compiler.options.output ?? {};
-      (output as any).filename = (pathData: PathData) => {
-        const chunkName = pathData.chunk?.name;
-        if (chunkName === "main") return outputFileName;
-        if (chunkName) return `${chunkName}.js`;
-        return "[name].js";
-      };
-      compiler.options.output = output;
-    };
-
-    compiler.hooks.beforeRun.tapPromise("BffWebpackPlugin", applyDiscovery);
-    compiler.hooks.watchRun.tapPromise("BffWebpackPlugin", applyDiscovery);
+    });
   }
 }

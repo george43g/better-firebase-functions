@@ -1,0 +1,23 @@
+{
+  "name": "bff-e2e-functions-bundled",
+  "private": true,
+  "main": "lib/index.js",
+  "engines": {
+    "node": "20"
+  },
+  "scripts": {
+    "build:esbuild": "tsx build.esbuild.ts",
+    "build:webpack": "webpack --config webpack.config.ts --node-env production",
+    "build:rollup": "rollup --config rollup.config.ts --configPlugin @rollup/plugin-typescript",
+    "deploy": "firebase deploy --only functions:bundler-esbuild,functions:bundler-webpack,functions:bundler-rollup"
+  },
+  "dependencies": {
+    "better-firebase-functions": "file:better-firebase-functions-local.tgz",
+    "firebase-admin": "^12.0.0",
+    "firebase-functions": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "tsx": "^4.20.6"
+  }
+}
