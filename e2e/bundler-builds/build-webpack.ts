@@ -28,7 +28,15 @@ webpack(
       rules: [
         {
           test: /\.ts$/,
-          use: { loader: 'ts-loader', options: { transpileOnly: true } },
+          use: {
+            loader: 'ts-loader',
+            options: {
+              transpileOnly: true,
+              compiler: resolve(__dirname, '../functions-bundled/node_modules/typescript'),
+              configFile: resolve(__dirname, '../functions-bundled/tsconfig.json'),
+              context: resolve(__dirname, '../functions-bundled'),
+            },
+          },
           exclude: /node_modules/,
         },
       ],

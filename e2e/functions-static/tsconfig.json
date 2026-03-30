@@ -10,8 +10,7 @@
     "outDir": "lib",
     "rootDir": "src",
     "declaration": true,
-    "sourceMap": true,
-    "ignoreDeprecations": "6.0"
+    "sourceMap": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "lib"]
