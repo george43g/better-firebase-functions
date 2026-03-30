@@ -1,6 +1,6 @@
 {
   "name": "better-firebase-functions",
-  "version": "7.0.1",
+  "version": "7.0.2",
   "description": "Automatically export and optimize Firebase Cloud Functions with lazy-loading cold-start optimization. Zero dependencies, supports Gen 1 and Gen 2.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

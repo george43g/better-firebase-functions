@@ -1,3 +1,10 @@
+## [7.0.2](https://github.com/george43g/better-firebase-functions/compare/v7.0.1...v7.0.2) (2026-03-30)
+
+
+### Bug Fixes
+
+* **release:** retry publish with refreshed npm credentials ([ad6149a](https://github.com/george43g/better-firebase-functions/commit/ad6149a4b341fd333b85a4c6e946bb72893b7029))
+
 ## [7.0.1](https://github.com/george43g/better-firebase-functions/compare/v7.0.0...v7.0.1) (2026-03-30)
 
 
