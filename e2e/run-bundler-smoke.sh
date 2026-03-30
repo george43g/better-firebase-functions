@@ -107,7 +107,8 @@ pattern = re.compile(rf"Function URL \({re.escape(codebase)}:{re.escape(func_nam
 
 with open(log_path, 'r', encoding='utf-8') as fh:
     for line in fh:
-        match = pattern.search(line)
+        clean_line = re.sub(r'\x1b\[[0-9;]*m', '', line)
+        match = pattern.search(clean_line)
         if match:
             print(match.group(1))
             break
