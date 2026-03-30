@@ -32,7 +32,8 @@
   "author": "George G",
   "license": "MPL-2.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=20",
+    "npm": ">=11.10.0"
   },
   "peerDependencies": {
     "webpack": ">=5.0.0"
