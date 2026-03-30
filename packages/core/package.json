@@ -40,7 +40,8 @@
   },
   "homepage": "https://github.com/george43g/better-firebase-functions#readme",
   "engines": {
-    "node": ">=20"
+    "node": ">=20",
+    "npm": ">=11.10.0"
   },
   "devDependencies": {
     "@types/node": "^22.19.15",
