@@ -1,3 +1,45 @@
+# [7.0.0](https://github.com/george43g/better-firebase-functions/compare/v6.0.1...v7.0.0) (2026-03-30)
+
+
+* feat!: modernize to v7 monorepo with bundler plugins ([dd70f10](https://github.com/george43g/better-firebase-functions/commit/dd70f107eeb10223f7ea4e580463cc87ff4d3ed3))
+
+
+### Bug Fixes
+
+* **ci:** restore bundler smoke workflow after deps upgrade ([d89cf6e](https://github.com/george43g/better-firebase-functions/commit/d89cf6ee2e82240f9467fd751488ad258f1f1bc9))
+* stabilize e2e bundler smoke deployments ([e3dba77](https://github.com/george43g/better-firebase-functions/commit/e3dba770f11fa69071310a79c4cf93a6cdabefda))
+* strip ANSI codes when parsing bundler function URLs ([8727896](https://github.com/george43g/better-firebase-functions/commit/8727896860069515d5edc158401329d4ac2b92e6))
+
+
+### Features
+
+* add e2e deploy benchmark, bundler READMEs, core Gen2 matching fixes ([03718d9](https://github.com/george43g/better-firebase-functions/commit/03718d9c069a458b28b3d7d1de37b103d68c98ea))
+* align bundler discovery with runtime BFF config ([b0bc5f6](https://github.com/george43g/better-firebase-functions/commit/b0bc5f69ca0207d659b2bd3eacac3482457d0bf9))
+* bundler e2e smoke tests, AI agent skill, webpack/rollup bug fixes, docs overhaul ([54d1d3c](https://github.com/george43g/better-firebase-functions/commit/54d1d3c10803660a1296c616cc4d83b6e4d0a51d))
+
+
+### BREAKING CHANGES
+
+* Restructured as Turborepo monorepo with 4 packages.
+
+Core library (better-firebase-functions):
+- Upgraded TypeScript 4.9 -> 5.7, target ES2022
+- Replaced @vercel/ncc with tsup (esbuild-based) for bundling
+- Inlined camelcase and lodash.set as zero-dep utilities
+- Replaced glob with fast-glob for faster file discovery
+- Added exportFunctionsAsync() for ESM module loading via import()
+- Fixed self-exclusion to handle .mjs extensions
+- Improved Gen 2 (K_SERVICE) support with dedicated tests
+- Replaced Jest with Vitest (29 tests passing)
+- Node.js 18+ required (dropped 14/16)
+
+New bundler plugins for per-function build optimization:
+- better-firebase-functions-esbuild: buildFunctions() + discoverFunctionEntryPoints()
+- better-firebase-functions-webpack: BffWebpackPlugin class
+- better-firebase-functions-rollup: bffRollupPlugin() + bffRollupOutput()
+
+Updated CI to test on Node 18/20/22 with Turborepo.
+
 ## [6.0.1](https://github.com/george43g/better-firebase-functions/compare/v6.0.0...v6.0.1) (2024-05-10)
 
 
