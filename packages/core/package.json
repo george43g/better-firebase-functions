@@ -1,0 +1,52 @@
+{
+  "name": "better-firebase-functions",
+  "version": "7.0.0",
+  "description": "Automatically export and optimize Firebase Cloud Functions with lazy-loading cold-start optimization. Zero dependencies, supports Gen 1 and Gen 2.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/george43g/better-firebase-functions.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "tag": "latest",
+    "access": "public"
+  },
+  "keywords": [
+    "firebase",
+    "cloud-functions",
+    "cold-start",
+    "optimization",
+    "lazy-loading",
+    "serverless",
+    "gen2"
+  ],
+  "author": "George G",
+  "license": "MPL-2.0",
+  "bugs": {
+    "url": "https://github.com/george43g/better-firebase-functions/issues"
+  },
+  "homepage": "https://github.com/george43g/better-firebase-functions#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.15",
+    "fast-glob": "^3.3.3",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2"
+  }
+}

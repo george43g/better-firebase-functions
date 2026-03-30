@@ -1,117 +1,36 @@
 {
-  "name": "better-firebase-functions",
-  "version": "5.0.0",
-  "description": "This package exposes a function that improves upon the standard way of bundling functions for Firebase Cloud Functions. It includes the ability to glob-match files that contain a cloud function that are then automatically exported. See README.md for more info.",
-  "main": "lib/index.js",
-  "types": "lib/types/index.d.ts",
-  "files": [
-    "lib"
+  "name": "better-firebase-functions-monorepo",
+  "private": true,
+  "workspaces": [
+    "packages/*"
   ],
   "scripts": {
-    "test": "jest --verbose",
-    "test:watch": "jest --verbose --watchAll",
-    "build": "rm -rf ./lib/  && ncc build src/index.ts -o lib/ -m && tsc -d --declarationDir lib/types --emitDeclarationOnly",
-    "lint": "eslint ./src/**/*.ts --fix",
-    "prebuild": "npm run lint",
-    "prepare": "npm run build",
-    "release": "npm run semantic-release",
-    "semantic-release": "semantic-release"
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "clean": "turbo clean"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/george43g/better-firebase-functions.git"
-  },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/",
-    "tag": "latest"
-  },
-  "keywords": [
-    "firebase",
-    "cloud-functions",
-    "efficient",
-    "deploy"
-  ],
-  "author": "George G",
-  "license": "MPL-2.0",
-  "bugs": {
-    "url": "https://github.com/george43g/better-firebase-functions/issues"
-  },
-  "homepage": "https://github.com/george43g/better-firebase-functions#readme",
   "devDependencies": {
-    "@babel/core": "^7.21.0",
-    "@babel/preset-env": "^7.20.2",
-    "@commitlint/cli": "^17.4.4",
-    "@commitlint/config-conventional": "^17.4.4",
-    "@commitlint/travis-cli": "^17.4.4",
-    "@semantic-release/changelog": "^6.0.2",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@rollup/plugin-commonjs": "^29.0.2",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
-    "@semantic-release/npm": "^9.0.2",
-    "@types/fs-extra": "^11.0.1",
-    "@types/jest": "^29.4.0",
-    "@types/lodash.set": "^4.3.7",
-    "@types/tmp": "^0.2.3",
-    "@typescript-eslint/eslint-plugin": "^5.54.1",
-    "@typescript-eslint/parser": "^5.54.1",
-    "@vercel/ncc": "^0.36.1",
-    "babel-jest": "^29.5.0",
-    "camelcase": "^6.3.0",
-    "commitizen": "^4.3.0",
-    "cz-conventional-changelog": "^3.3.0",
-    "eslint": "^8.36.0",
-    "eslint-config-airbnb": "^19.0.4",
-    "eslint-plugin-import": "^2.27.5",
-    "eslint-plugin-jest": "^27.2.1",
-    "eslint-plugin-jsx-a11y": "^6.7.1",
-    "eslint-plugin-react": "^7.32.2",
-    "fs-extra": "^11.1.0",
-    "glob": "^10.2.1",
-    "husky": "^8.0.3",
-    "jest": "^29.5.0",
-    "lodash.set": "^4.3.2",
-    "rimraf": "^5.0.0",
-    "semantic-release": "^20.1.1",
-    "tmp": "^0.2.1",
-    "ts-jest": "^29.0.5",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.5"
+    "esbuild": "^0.27.4",
+    "husky": "^9.0.0",
+    "prettier": "^3.2.0",
+    "rollup": "^4.60.0",
+    "semantic-release": "^24.2.9",
+    "ts-loader": "^9.5.4",
+    "tslib": "^2.8.1",
+    "turbo": "^2.4.0",
+    "webpack": "^5.105.4",
+    "webpack-cli": "^7.0.2"
   },
-  "jest": {
-    "roots": [
-      "<rootDir>/src",
-      "<rootDir>/__tests__"
-    ],
-    "testMatch": [
-      "**/__tests__/**/*.+(ts|tsx|js)",
-      "**/?(*.)+(spec|test).+(ts|tsx|js)"
-    ],
-    "transform": {
-      "\\.js?$": "babel-jest",
-      "^.+\\.(ts|tsx)$": "ts-jest"
-    }
-  },
-  "release": {
-    "branch": "master",
-    "plugins": [
-      "@semantic-release/commit-analyzer",
-      "@semantic-release/release-notes-generator",
-      [
-        "@semantic-release/changelog",
-        {
-          "changelogFile": "CHANGELOG.md"
-        }
-      ],
-      "@semantic-release/npm",
-      [
-        "@semantic-release/git",
-        {
-          "assets": [
-            "CHANGELOG.md"
-          ]
-        }
-      ],
-      "@semantic-release/github"
-    ]
-  },
+  "packageManager": "npm@11.12.1",
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"

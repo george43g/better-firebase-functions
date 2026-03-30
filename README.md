@@ -1,160 +1,420 @@
 # better-firebase-functions
 
-The main feature of this package is a function that provides a better way of automatically exporting function triggers
-in Firebase Cloud Functions. This method will almost always improve the performance, memory usage and cold-boot time of
-your cloud functions, especially in large projects. It also allows for a more scalable file structure for your source
-code directory.
+**Auto-export Firebase Cloud Functions with cold-start optimization built in.**
 
-This package is bundled into one module with 0 dependencies, and is designed to be as lightweight, configurable and
-reliable/redundant as possible. Suitable for production use in almost any project. Only one feature is available in this
-package to keep the bundle size as small as possible for performance reasons.
+[![npm](https://img.shields.io/npm/v/better-firebase-functions)](https://www.npmjs.com/package/better-firebase-functions)
+[![CI](https://github.com/george43g/better-firebase-functions/actions/workflows/npm-publish.yml/badge.svg)](https://github.com/george43g/better-firebase-functions/actions/workflows/npm-publish.yml)
+[![license](https://img.shields.io/npm/l/better-firebase-functions)](./LICENSE)
 
-## Installation
+---
 
-Simply install from NPM:
+## What is this?
+
+`better-firebase-functions` replaces the boilerplate of manually importing and exporting every trigger with a single call. More importantly, it implements a **cold-start optimization**: at runtime, only the single function module that is actually being invoked is loaded — not every function in your project.
+
+In large projects with many functions this can reduce cold-start time and memory usage significantly. In single-function projects it adds zero overhead.
+
+Supports:
+- **Gen 1** functions (`FUNCTION_NAME`)
+- **Gen 2** functions / Cloud Run (`K_SERVICE`, `FUNCTION_TARGET`)
+- **CJS and ESM** entry points
+- **esbuild, webpack, and Rollup** for per-function bundling (optional, takes the optimization further)
+
+---
+
+## Packages
+
+| Package | Description |
+|---|---|
+| [`better-firebase-functions`](./packages/core) | Core runtime library. Zero dependencies. |
+| [`better-firebase-functions-esbuild`](./packages/esbuild) | esbuild build helper for per-function bundles |
+| [`better-firebase-functions-webpack`](./packages/webpack) | webpack plugin for per-function bundles |
+| [`better-firebase-functions-rollup`](./packages/rollup) | Rollup plugin for per-function bundles |
+
+---
+
+## Quick Start
+
+### 1. Install
 
 ```sh
 npm install better-firebase-functions
 ```
 
-1. Ensure your main entry point file contains only:
+### 2. Replace your entry point
 
 ```typescript
 // src/index.ts
 import { exportFunctions } from 'better-firebase-functions';
 
-exportFunctions({ __filename, exports });
+exportFunctions({
+  __filename,
+  exports,
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+});
 ```
 
-2. Ensure your function triggers are structured like this:
+> **Note on `searchGlob`:** the glob should match files as they exist **at runtime after compilation** (i.e. `.js` files). If you run TypeScript natively (via `tsx`, `ts-node`, etc.) you can glob `.ts` directly. Bundler plugins automatically expand `.js` globs to include `.ts` source files at build time.
+
+### 3. Write each trigger as a default export
 
 ```typescript
-// src/auth/on-create.ts
-import * as functions from 'firebase-functions';
+// src/functions/http/get-user.func.ts
+import { onRequest } from 'firebase-functions/v2/https';
 
-export default functions.auth.user().onCreate(/* Function */);
+export default onRequest(async (req, res) => {
+  res.json({ ok: true });
+});
 ```
 
-## exportFunctions()
+```typescript
+// src/functions/auth/on-create.func.ts
+import { auth } from 'firebase-functions';
 
-This function has two main features:
+export default auth.user().onCreate(async (user) => {
+  // ...
+});
+```
 
-1. Automatically export all function triggers from your index file, without having to manually import each module.
+Functions are named automatically from their file paths relative to `functionDirectoryPath`:
 
-2. Function triggers are exported in a special way that increases performance and reduces cold-boot time of your cloud
-   functions.
+| File | Exported as |
+|---|---|
+| `functions/on-create.func.ts` | `onCreate` |
+| `functions/auth/on-create.func.ts` | `auth-onCreate` |
+| `functions/http/api/get-users.func.ts` | `http-api-getUsers` |
 
-_More info:_
+Dashes in the name create **Firebase function groups**, so `firebase deploy --only functions:auth` works out of the box.
 
-- Functions are automatically named after their path from the root functions directory.
-- Rename a function by renaming a file.
-- Automatically create function groups based on directory structure, allowing for `--only functions: groupA` deploys.
+---
 
-For JS projects that cant use `export default` syntax, just use equivalent `module.exports.default = ...`.
+## How the Cold-Start Optimization Works
 
-This function scans a directory for modules (_.js files), then exports them automatically. It exports each found
-module's `default` export (`export default _`or`module.exports.default = \*`). Each file should contain one function
-trigger and export it as the default export. Almost every default behaviour can be customised by the settings object.
+Without BFF, your entry point imports every function module at startup. In a project with 50 functions, all 50 modules are loaded, their dependencies resolved, and their closures formed on every cold start — even though only one function is being invoked.
 
-### exportFunctions() Usage
+With BFF, the entry point checks the runtime environment (`FUNCTION_TARGET`, `FUNCTION_NAME`, `K_SERVICE`) to identify which function is running. It then loads **only that module**. The other 49 are skipped entirely.
 
-In your main entry point file, simply include these two lines of code:
+```
+Without BFF:  load module A + B + C + D + ... + N  (all N modules)
+With BFF:     load module A only
+```
+
+During **deployment** (when no function-instance env var is set), BFF loads all modules so Firebase CLI can discover every trigger. This is the only time all modules are loaded.
+
+The optimization is **purely subtractive** — it can only help, never hurt.
+
+---
+
+## API Reference
+
+### `exportFunctions(config)` — synchronous, CJS
 
 ```typescript
-/// entry point, index.js/ts
 import { exportFunctions } from 'better-firebase-functions';
-exportFunctions({ __filename, exports });
+
+exportFunctions({
+  __filename,           // required — Node's __filename
+  exports,              // required — Node's exports / module.exports
+
+  // Discovery — all optional, defaults shown:
+  functionDirectoryPath: './',                     // relative to __dirname / entry point dir
+  searchGlob: '**/*.{js,ts}',                     // glob matching trigger files at runtime
+  funcNameFromRelPath: funcNameFromRelPathDefault, // custom name generator
+  __dirname: undefined,                            // override base dir (derived from __filename)
+
+  // Module loading — optional:
+  extractTrigger: (mod) => mod?.default,           // extract trigger from loaded module
+
+  // Logging — optional:
+  enableLogger: false,                             // enable performance timing logs
+  logger: console,                                 // custom logger object
+
+  // Build tools — optional:
+  exportPathMode: false,                           // export file paths instead of triggers (debug)
+});
 ```
 
-The function will export all found triggers from your index file.
+Returns the populated `exports` object (also mutated in-place).
 
-And then in your modules, define your function triggers:
+### `exportFunctionsAsync(config)` — async, ESM-compatible
 
-```ts
-/// ./http/new-user.func.ts
-import * as functions from 'firebase-functions'
-export default functions.https.onRequest(app)...
+Identical config shape. Uses dynamic `import()` instead of `require()`. Use this for ESM function files or from an ESM entry point.
+
+```typescript
+// ESM entry point (e.g. index.mjs or package.json "type": "module")
+import { exportFunctionsAsync } from 'better-firebase-functions';
+
+const fns = await exportFunctionsAsync({
+  __filename: import.meta.filename,
+  exports: {},
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+});
+
+export default fns;
 ```
 
-The above function will automatically be exported as `http-newUser`, because it is in a directory called `http` and is
-in a file called `new-user.func.ts`. The dash `http-` denotes that the function is in a submodule group called `http`,
-meaning the functions found in the `http` directory can be exported using `firebase deploy --only functions: http`.
+### `discoverFunctionPaths(config)` — build-time discovery helper
 
-#### How it Works
+Returns structured discovery metadata for bundler plugins. Most users do not call this directly.
 
-exportFunctions() will search the given directory using provided glob matching pattern and export firebase cloud
-functions for you automatically, without you having to require each file individually. All matching files will then be
-checked for a default export. The filename and path is used to determine the function name. The function triggers are
-nested on the exports object to mirror the folder structure, allowing for deployment groups. You can set the glob
-pattern to only pick up files that end in _.cf.js or _.function.js Be sure to _still_ use `js` as your file extension
-when matching if you are using Typescript as this code is executed at runtime once the files are compiled.
+```typescript
+import { discoverFunctionPaths } from 'better-firebase-functions';
 
-### Settings Object
+const discovery = discoverFunctionPaths({
+  __filename: entryPointPath,
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+});
 
-#### logger : object, enableLogger: boolean
+// discovery.entries: Record<funcName, { absPath, sourceRelativePath, runtimeRelativePath, outputRelativePath, outputEntryName }>
+```
 
-You may specify a custom log function, and enable/disable performance logging.
+---
 
-#### funcNameFromRelPath : method
+## Configuration Reference
 
-You may provide a custom function for generating function names based on the file path the module was found. The input
-is a string that is the relative path to the module, and the expected output is a string with the name of your function.
-Submodules (module groups) are separated by a dash `-` and the names should be in camelCase. The input filenames should
-be in kebab-case.
+| Option | Type | Default | Description |
+|---|---|---|---|
+| `__filename` | `string` | — | **Required.** Node's `__filename` (or `import.meta.filename` in ESM) |
+| `exports` | `object` | — | **Required.** Node's `exports` / `module.exports` |
+| `functionDirectoryPath` | `string` | `'./'` | Directory containing function files, relative to entry point |
+| `searchGlob` | `string` | `'**/*.{js,ts}'` | Glob pattern matching trigger files at runtime |
+| `funcNameFromRelPath` | `function` | built-in | Custom function name generator — `(relPath: string) => string` |
+| `extractTrigger` | `function` | `(mod) => mod?.default` | Extract trigger from loaded module |
+| `__dirname` | `string` | derived from `__filename` | Override discovery base directory |
+| `enableLogger` | `boolean` | `false` | Print performance timing logs |
+| `logger` | `object` | `console` | Custom logger with `time`, `timeEnd`, `log` methods |
+| `exportPathMode` | `boolean` | `false` | Export file paths instead of triggers (debugging / build tools) |
 
-#### functionDirectoryPath : string
+---
 
-Provide a custom subdirectory to search for function triggers.
+## Bundler Plugins
 
-#### searchGlob: string
+Bundler plugins take the optimization further: they produce **one independently bundled, tree-shaken file per function**. On cold start, Node.js parses only the code that specific function needs — no dead code from unrelated functions.
 
-This is a glob pattern that allows you to define which files to search for.
+### The single-source-of-truth design
 
-#### extractTrigger: method
+The plugins execute your BFF entry point in build-discovery mode (`BFF_BUILD_DISCOVERY=1`) to reuse the exact same `functionDirectoryPath`, `searchGlob`, and `funcNameFromRelPath` already configured for runtime. You write your BFF config once, in the entry point. The bundler inherits it automatically.
 
-By passing this method you can customise how `exportFunctions()` gets the function trigger from the module. The default
-behaviour is to look for the `default` export, but you may specify a different way such as a named export. The function
-is given the module object and must return the function trigger.
+Your runtime `searchGlob` can target `.js` files — the plugins automatically expand it to match `.ts` source files at build time.
 
-#### exportPathMode: boolean
+### Output layout
 
-This flag will result in the export object holding the relative paths to the detected modules as values for the export
-keys rather than the actual module or function trigger. This option is useful when using this package as part of a build
-process or for debugging.
+Bundled outputs preserve the `functionDirectoryPath` and mirror the runtime file layout:
 
-### Other Options
+```
+src/functions/auth/on-create.func.ts  →  dist/functions/auth/on-create.func.js
+src/functions/http/get-user.func.ts   →  dist/functions/http/get-user.func.js
+```
 
-The provided typings contain jsdoc comments that should provide intellisense about the various configuration options
-available and how to use them.
+The deployed `main.js` uses the same `functionDirectoryPath` and `searchGlob` — no mismatch between build and runtime.
 
-#### If my tests are in the same directory
+### esbuild
 
-As long as your test files do not provide a default export, they won't be included in the export. Otherwise, you can use
-glob patterns to only include certain files (`*.func.js`).
+```sh
+npm install -D better-firebase-functions-esbuild esbuild
+```
 
-You can now also control how the function trigger export is "found" from each module file. For example, instead of using
-a default export, you can opt to use a named export called `export const functionTrigger = functions...`.
+```typescript
+import { buildFunctions } from 'better-firebase-functions-esbuild';
+import { resolve } from 'path';
 
-### Warnings
+await buildFunctions({
+  entryPoint: resolve(__dirname, 'src/index.ts'),
+  outdir: resolve(__dirname, 'dist'),
+  target: 'node20',
+});
+```
 
-Try to avoid collisions, where two modules are exported to the same path.
+→ Full docs: [`packages/esbuild/README.md`](./packages/esbuild/README.md)
 
-This module does its best to convert dashes in files to camelCase and multi-extensions on files `user.function.js` to
-valid names, so as to avoid misnaming a function.
+### webpack
 
-You can use the glob pattern to specify which files to target, but be careful: `user.test.js & user.function.js`, if
-they are both included accidentally, will collide with each other as they are both called `user` and the extension is
-stripped away (provided they both have a default export)
+```sh
+npm install -D better-firebase-functions-webpack webpack
+```
 
-If you need both files, then you can optionally change their names to use camelCase or use a dash `-` (which are also
-automatically converted to camelCase) leaving only the dot in .js.
+```typescript
+// webpack.config.ts
+import { BffWebpackPlugin } from 'better-firebase-functions-webpack';
 
-#### Node 8
+export default {
+  target: 'node',
+  entry: 'src/index.ts',
+  plugins: [
+    new BffWebpackPlugin({
+      entryPoint: resolve(__dirname, 'src/index.ts'),
+    }),
+  ],
+};
+```
 
-If you are using Firebase Functions in Node v8, then the master branch will not work with default settings. The
-funcNameFromRelPath method uses a dependency called `camelCase` which crashes in v8. There is a specific branch for Node
-v8 called `node8` that can be installed via `npm install git@github.com:gramstr/better-firebase-functions.git#node8`
+→ Full docs: [`packages/webpack/README.md`](./packages/webpack/README.md)
 
-## Contribute
+### Rollup
 
-Please contribute to this project by submitting a pull request. Use Commitizen to generate correct commit messages.
+```sh
+npm install -D better-firebase-functions-rollup rollup
+```
+
+```typescript
+// rollup.config.ts
+import { bffRollupPlugin, bffRollupOutput } from 'better-firebase-functions-rollup';
+
+export default {
+  input: 'src/index.ts',
+  output: bffRollupOutput({ dir: 'dist' }),
+  plugins: [bffRollupPlugin({ entryPoint: resolve(__dirname, 'src/index.ts') })],
+};
+```
+
+→ Full docs: [`packages/rollup/README.md`](./packages/rollup/README.md)
+
+---
+
+## Common Patterns
+
+### Custom file suffix convention
+
+```typescript
+exportFunctions({
+  __filename,
+  exports,
+  searchGlob: '**/*.trigger.js', // only files ending in .trigger.js
+});
+```
+
+### Custom function name generator
+
+```typescript
+import { exportFunctions } from 'better-firebase-functions';
+import { basename } from 'path';
+
+exportFunctions({
+  __filename,
+  exports,
+  // Flat names — no group prefix — all functions at top level
+  funcNameFromRelPath: (relPath) => basename(relPath).replace(/\.(func\.)?(js|ts)$/, ''),
+});
+```
+
+### Named export instead of default
+
+```typescript
+exportFunctions({
+  __filename,
+  exports,
+  extractTrigger: (mod) => mod?.handler ?? mod?.default,
+});
+```
+
+### ESM entry point with top-level await
+
+```typescript
+// index.mjs
+import { exportFunctionsAsync } from 'better-firebase-functions';
+
+export default await exportFunctionsAsync({
+  __filename: import.meta.filename,
+  exports: {},
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+});
+```
+
+### Co-located test files — keep them out
+
+Use a specific glob pattern that excludes test files:
+
+```typescript
+exportFunctions({
+  __filename,
+  exports,
+  searchGlob: '**/*.func.js', // .test.js and .spec.js are not matched
+});
+```
+
+---
+
+## Environment Variables (Read by BFF)
+
+| Variable | Source | Priority | Notes |
+|---|---|---|---|
+| `FUNCTION_TARGET` | Functions Framework (Gen 2) | 1st | Most precise — exact registered function name |
+| `FUNCTION_NAME` | Firebase Gen 1, some Gen 2 | 2nd | May be a full resource path — last segment extracted |
+| `K_SERVICE` | Cloud Run (Gen 2) | 3rd | Lowercased by Cloud Run — canonicalized before matching |
+| `BFF_BUILD_DISCOVERY` | Bundler plugins | — | Set to `1` during build-time discovery; skips loading modules |
+
+When none of the function-identity variables are set, BFF is in deployment mode and loads all modules.
+
+---
+
+## Troubleshooting
+
+**Functions are not discovered (empty exports)**
+
+1. Check your `searchGlob` matches the compiled files. If you use `tsc`, globs for `.ts` won't find anything at runtime — use `.js`.
+2. Set `enableLogger: true` to see which files the glob finds at startup.
+3. Check `functionDirectoryPath` is correct relative to your entry point.
+
+**`Function 'x' is not defined in the provided module` on Gen 2**
+
+BFF's name matching failed. The most common causes:
+- The derived function name does not match what Cloud Run lowercases as `K_SERVICE`.
+- You use a custom `funcNameFromRelPath` whose output doesn't canonicalize to the Cloud Run service name.
+
+Enable logger to see what name BFF is searching for vs. what the env var contains.
+
+**Bundler plugin throws `did not expose __bff_discovery`**
+
+BFF's entry-point execution mode requires `tsx` to be able to require TypeScript files. Either:
+1. Add `tsx` as a devDependency in your bundler package
+2. Fall back to manual discovery overrides:
+
+```typescript
+new BffWebpackPlugin({
+  entryPoint: resolve(__dirname, 'src/index.ts'),
+  // Manual fallback:
+  functionDirectoryPath: './functions',
+  searchGlob: '**/*.func.js',
+})
+```
+
+---
+
+## Requirements
+
+- Node.js ≥ 20
+- Firebase Functions Gen 1 or Gen 2
+- CJS modules for `exportFunctions`; ESM supported via `exportFunctionsAsync`
+- `tsx` as a dev dependency if using bundler plugins with TypeScript entry points
+
+---
+
+## Contributing
+
+This is a Turborepo monorepo with npm workspaces.
+
+```sh
+git clone https://github.com/george43g/better-firebase-functions
+npm install
+npm run build   # build all packages
+npm test        # run all tests
+npm run lint    # type-check all packages
+```
+
+Core library tests: `packages/core/__tests__/`
+
+E2E benchmarks against a real Firebase project:
+
+```sh
+PROJECT_ID=your-project-id ./e2e/run-deploy-benchmark.sh
+```
+
+---
+
+## License
+
+[MPL-2.0](./LICENSE)

@@ -1,0 +1,42 @@
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "bff",
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log", "*.local"],
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+    },
+    {
+      "source": "functions-static",
+      "codebase": "static",
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log", "*.local"],
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+    },
+    {
+      "source": "functions-bundled/bundler-esbuild",
+      "codebase": "bundler-esbuild",
+      "ignore": ["node_modules", ".git", "*.log", "*.local"]
+    },
+    {
+      "source": "functions-bundled/bundler-webpack",
+      "codebase": "bundler-webpack",
+      "ignore": ["node_modules", ".git", "*.log", "*.local"]
+    },
+    {
+      "source": "functions-bundled/bundler-rollup",
+      "codebase": "bundler-rollup",
+      "ignore": ["node_modules", ".git", "*.log", "*.local"]
+    }
+  ],
+  "firestore": {
+    "database": "(default)",
+    "location": "nam5",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "emulators": {
+    "functions": {
+      "port": 5055
+    }
+  }
+}

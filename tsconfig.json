@@ -1,18 +1,15 @@
 {
-  "version": "2.4.2",
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "lib": ["es2017", "DOM"],
-    "target": "es2017",
-    "module": "esnext",
-    "moduleResolution": "node",
-    "emitDecoratorMetadata": true,
-    "experimentalDecorators": true,
-    "sourceMap": true,
-    "rootDir": "src",
-    "strict": true,
-    "outDir": "lib",
-    "esModuleInterop": true,
-    "types": ["node", "jest"]
+    "rootDir": ".",
+    "types": ["node"]
   },
-  "exclude": ["node_modules", "lib", "__mocks__", "__tests__"]
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/esbuild" },
+    { "path": "packages/webpack" },
+    { "path": "packages/rollup" }
+  ],
+  "include": [],
+  "exclude": ["node_modules", "packages/*/dist"]
 }

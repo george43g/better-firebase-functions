@@ -1,0 +1,51 @@
+{
+  "name": "better-firebase-functions-rollup",
+  "version": "7.0.0",
+  "description": "Rollup plugin for optimized Firebase Cloud Functions builds. Per-function entry points with tree shaking.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "echo 'No tests yet - integration tests coming in e2e suite'",
+    "lint": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/george43g/better-firebase-functions.git",
+    "directory": "packages/rollup"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "firebase",
+    "cloud-functions",
+    "rollup",
+    "rollup-plugin",
+    "optimization",
+    "tree-shaking"
+  ],
+  "author": "George G",
+  "license": "MPL-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "peerDependencies": {
+    "rollup": ">=3.0.0"
+  },
+  "dependencies": {
+    "better-firebase-functions": "^7.0.0",
+    "tsx": "^4.20.6"
+  },
+  "devDependencies": {
+    "rollup": "^4.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2",
+    "@types/node": "^22.19.15"
+  }
+}

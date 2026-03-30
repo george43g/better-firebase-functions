@@ -1,0 +1,9 @@
+{
+  "name": "bff-e2e-bundler-esbuild",
+  "private": true,
+  "main": "index.cjs",
+  "engines": { "node": "20" },
+  "dependencies": {
+    "firebase-functions": "^7.2.2"
+  }
+}
