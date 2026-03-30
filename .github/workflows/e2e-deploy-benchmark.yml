@@ -17,6 +17,9 @@ on:
         required: false
         default: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   # -------------------------------------------------------------------------
   # BFF vs Static benchmark
@@ -28,11 +31,11 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6.3.0
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install root dependencies
@@ -62,7 +65,7 @@ jobs:
 
       - name: Upload benchmark artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: deploy-benchmark-results
           path: e2e/results/
@@ -78,11 +81,11 @@ jobs:
     if: ${{ github.event.inputs.run_bundler_smoke != 'false' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6.3.0
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install root dependencies
@@ -112,7 +115,7 @@ jobs:
 
       - name: Upload smoke test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: bundler-smoke-results
           path: e2e/results/

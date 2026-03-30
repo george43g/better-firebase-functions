@@ -12,16 +12,19 @@ permissions:
   pull-requests: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [18, 20, 22]
+        node: [20, 22]
     name: Node ${{ matrix.node }} - Build & Test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6.0.2
+      - uses: actions/setup-node@v6.3.0
         with:
           node-version: ${{ matrix.node }}
           cache: 'npm'
@@ -35,11 +38,11 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6.3.0
         with:
           node-version: 22
           cache: 'npm'
