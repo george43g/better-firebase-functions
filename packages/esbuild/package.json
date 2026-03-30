@@ -1,6 +1,6 @@
 {
   "name": "better-firebase-functions-esbuild",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "esbuild plugin for optimized Firebase Cloud Functions builds. Per-function entry points with tree shaking.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,3 +1,10 @@
+## [7.0.1](https://github.com/george43g/better-firebase-functions/compare/v7.0.0...v7.0.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* **release:** trigger patch publish for companion packages ([d31c7e2](https://github.com/george43g/better-firebase-functions/commit/d31c7e2ad31731fc1e439f5e805cdbaf3713c5fc))
+
 # [7.0.0](https://github.com/george43g/better-firebase-functions/compare/v6.0.1...v7.0.0) (2026-03-30)
 
 
