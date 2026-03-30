@@ -93,15 +93,32 @@ echo "=== Invoke Smoke Functions ==="
 
 get_function_url() {
   local codebase="$1"
-  # Firebase CLI prints "Function URL (codebase:funcName(region)): https://..."
-  grep -oP "Function URL \(${codebase}:smoke\([^)]+\)\): \K[^\s]+" "${DEPLOY_LOG}" | head -1
+  local bundler="$2"
+  local bundler_capitalized
+  bundler_capitalized="${bundler^}"
+  # Firebase CLI prints lines like:
+  # Function URL (bundler-esbuild:bundlerEsbuildSmoke(us-central1)): https://...
+  python3 - <<'PY' "${DEPLOY_LOG}" "${codebase}" "bundler${bundler_capitalized}Smoke"
+import re
+import sys
+
+log_path, codebase, func_name = sys.argv[1:4]
+pattern = re.compile(rf"Function URL \({re.escape(codebase)}:{re.escape(func_name)}\([^)]+\)\): (\S+)")
+
+with open(log_path, 'r', encoding='utf-8') as fh:
+    for line in fh:
+        match = pattern.search(line)
+        if match:
+            print(match.group(1))
+            break
+PY
 }
 
 smoke_invoke() {
   local bundler="$1"
   local codebase="bundler-${bundler}"
   local url
-  url="$(get_function_url "${codebase}")"
+  url="$(get_function_url "${codebase}" "${bundler}")"
 
   if [[ -z "${url}" ]]; then
     echo "  FAILED: could not extract URL for codebase ${codebase} from deploy log"

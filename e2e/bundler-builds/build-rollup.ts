@@ -7,10 +7,15 @@ import { rollup } from 'rollup';
 import nodeResolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
+import replace from '@rollup/plugin-replace';
 import { bffRollupPlugin, bffRollupOutput } from '../../packages/rollup/dist/index.js';
 
 void (async () => {
-  const outdir = process.argv[2] || resolve(__dirname, '../functions-bundled/lib-rollup');
+  process.env.BFF_BUNDLER_NAME = 'rollup';
+
+  const outdir = process.argv[2]
+    ? resolve(process.cwd(), process.argv[2])
+    : resolve(__dirname, '../functions-bundled/lib-rollup');
   const entryPoint = resolve(__dirname, '../functions-bundled/src/index.ts');
 
   const outputOptions = bffRollupOutput({ dir: outdir, mainFileName: 'main.js', format: 'cjs' });
@@ -24,6 +29,12 @@ void (async () => {
       /^firebase-functions\//,
     ],
     plugins: [
+      replace({
+        preventAssignment: true,
+        values: {
+          'process.env.BFF_BUNDLER_NAME': '"rollup"',
+        },
+      }),
       bffRollupPlugin({ entryPoint, verbose: true }),
       nodeResolve({ preferBuiltins: true }),
       commonjs(),

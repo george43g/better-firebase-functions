@@ -6,7 +6,11 @@ import { buildFunctions } from '../../packages/esbuild/dist/index.js';
 import { resolve } from 'path';
 
 void (async () => {
-  const outdir = process.argv[2] || resolve(__dirname, '../functions-bundled/lib-esbuild');
+  process.env.BFF_BUNDLER_NAME = 'esbuild';
+
+  const outdir = process.argv[2]
+    ? resolve(process.cwd(), process.argv[2])
+    : resolve(__dirname, '../functions-bundled/lib-esbuild');
   const entryPoint = resolve(__dirname, '../functions-bundled/src/index.ts');
 
   const result = await buildFunctions({
@@ -15,6 +19,9 @@ void (async () => {
     target: 'node20',
     verbose: true,
     esbuildOptions: {
+      define: {
+        'process.env.BFF_BUNDLER_NAME': '"esbuild"',
+      },
       external: ['firebase-admin', 'firebase-functions', 'firebase-admin/*', 'firebase-functions/*'],
     },
   });

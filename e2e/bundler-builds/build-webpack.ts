@@ -9,13 +9,17 @@ import { BffWebpackPlugin } from '../../packages/webpack/dist/index.js';
 const outdir = process.argv[2] || resolve(__dirname, '../functions-bundled/lib-webpack');
 const entryPoint = resolve(__dirname, '../functions-bundled/src/index.ts');
 
+process.env.BFF_BUNDLER_NAME = 'webpack';
+
+const resolvedOutdir = resolve(process.cwd(), outdir);
+
 webpack(
   {
     target: 'node',
     mode: 'production',
     entry: entryPoint,
     output: {
-      path: outdir,
+      path: resolvedOutdir,
       libraryTarget: 'commonjs2',
       filename: '[name].js',
     },
@@ -38,6 +42,9 @@ webpack(
     },
     optimization: { minimize: false },
     plugins: [
+      new webpack.DefinePlugin({
+        'process.env.BFF_BUNDLER_NAME': '"webpack"',
+      }),
       new BffWebpackPlugin({
         entryPoint,
         outputFileName: 'main.js',
@@ -55,7 +62,7 @@ webpack(
       process.exit(1);
     }
     const assets = Object.keys(stats?.compilation?.assets ?? {});
-    console.log(`[bff-webpack-smoke] bundled ${assets.length} outputs → ${outdir}`);
+    console.log(`[bff-webpack-smoke] bundled ${assets.length} outputs → ${resolvedOutdir}`);
     console.log('  assets:', assets);
   },
 );
