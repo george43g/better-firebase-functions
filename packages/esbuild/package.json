@@ -32,7 +32,7 @@
   "author": "George G",
   "license": "MPL-2.0",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "peerDependencies": {
     "esbuild": ">=0.17.0"
@@ -42,10 +42,10 @@
     "tsx": "^4.20.6"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0",
+    "esbuild": "^0.27.4",
     "tsup": "^8.0.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.0.0",
-    "@types/node": "^20.0.0"
+    "typescript": "^6.0.2",
+    "vitest": "^4.1.2",
+    "@types/node": "^22.19.15"
   }
 }

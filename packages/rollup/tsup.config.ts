@@ -6,7 +6,7 @@ export default defineConfig({
   dts: true,
   clean: true,
   platform: 'node',
-  target: 'node18',
+  target: 'node20',
   sourcemap: true,
   external: ['rollup', 'better-firebase-functions'],
 });

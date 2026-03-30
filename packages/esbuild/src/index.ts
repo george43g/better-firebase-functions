@@ -43,7 +43,7 @@ export interface BffEsbuildPluginOptions extends DiscoveryOverrideOptions {
 
   /**
    * Node.js target version.
-   * @default 'node18'
+   * @default 'node20'
    */
   target?: string;
 
@@ -280,7 +280,7 @@ export async function buildFunctions(
   const {
     entryPoint,
     external,
-    target = "node18",
+    target = "node20",
     verbose = false,
     outdir,
     esbuildOptions = {},

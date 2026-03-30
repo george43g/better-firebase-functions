@@ -8,7 +8,7 @@ export default defineConfig({
   minify: true,
   bundle: true,
   platform: 'node',
-  target: 'node18',
+  target: 'node20',
   sourcemap: true,
   // Bundle all dependencies into the output (zero runtime dependencies)
   noExternal: [/.*/],

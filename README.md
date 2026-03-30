@@ -386,7 +386,7 @@ new BffWebpackPlugin({
 
 ## Requirements
 
-- Node.js ≥ 18
+- Node.js ≥ 20
 - Firebase Functions Gen 1 or Gen 2
 - CJS modules for `exportFunctions`; ESM supported via `exportFunctionsAsync`
 - `tsx` as a dev dependency if using bundler plugins with TypeScript entry points

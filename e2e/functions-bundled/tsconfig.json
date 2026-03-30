@@ -9,7 +9,8 @@
     "skipLibCheck": true,
     "outDir": "lib",
     "rootDir": "src",
-    "sourceMap": true
+    "sourceMap": true,
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src"],
   "exclude": ["node_modules", "lib", "lib-esbuild", "lib-webpack", "lib-rollup"]
