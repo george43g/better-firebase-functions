@@ -1,6 +1,6 @@
 {
   "name": "better-firebase-functions-rollup",
-  "version": "7.0.2",
+  "version": "7.1.0",
   "description": "Rollup plugin for optimized Firebase Cloud Functions builds. Per-function entry points with tree shaking.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -1,3 +1,10 @@
+# [7.1.0](https://github.com/george43g/better-firebase-functions/compare/v7.0.2...v7.1.0) (2026-04-01)
+
+
+### Features
+
+* **docs:** bundle skill directory with all npm packages for agent discovery ([3392015](https://github.com/george43g/better-firebase-functions/commit/33920155f71557649429d109caae285e23900bee))
+
 ## [7.0.2](https://github.com/george43g/better-firebase-functions/compare/v7.0.1...v7.0.2) (2026-03-30)
 
 
