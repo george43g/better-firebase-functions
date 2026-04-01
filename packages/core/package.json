@@ -14,7 +14,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "tsc --noEmit",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "prepack": "cp -r ../../skill ./skill.tmp && rm -f skill && mv skill.tmp skill && cp ../../README.md ./README.md.tmp && rm -f README.md && mv README.md.tmp README.md"
   },
   "repository": {
     "type": "git",
