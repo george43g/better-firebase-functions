@@ -1,3 +1,10 @@
+## [7.1.1](https://github.com/george43g/better-firebase-functions/compare/v7.1.0...v7.1.1) (2026-04-01)
+
+
+### Bug Fixes
+
+* **docs:** add prepack scripts to bundle skill directory with npm packages ([cf06fbd](https://github.com/george43g/better-firebase-functions/commit/cf06fbdf5a674c76197d8685fb073155beb766a0))
+
 # [7.1.0](https://github.com/george43g/better-firebase-functions/compare/v7.0.2...v7.1.0) (2026-04-01)
 
 
