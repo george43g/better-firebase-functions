@@ -48,7 +48,7 @@
     "webpack": "^5.90.0",
     "tsup": "^8.0.0",
     "typescript": "^6.0.2",
-    "vitest": "^4.1.2",
+    "vitest": "^4.1.11",
     "@types/node": "^22.19.15"
   }
 }
